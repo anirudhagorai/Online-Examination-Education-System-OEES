@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <link rel="icon" type="image/x-icon" href="{% static 'assets/images/favicon.ico'%}">
+  <link rel="stylesheet" href="{% static 'assets/css/student_account.css' %}">
+  <title>EduExam - {% block title %}Student Portal{% endblock %}</title>
+</head>
+<body>
+  <!-- Overlay -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img class="logo-icon" src="{% static 'assets/images/logo.png' %}" alt="logo" href="{% url 'student_dashboard' %}">
+      <p class="logo-text">EduExam</p>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" href="{% url 'student_dashboard' %}">
+        <span class="material-symbols-outlined">grid_view</span>Dashboard
+      </a>
+      <a class="nav-item {% if active_page == 'courses' %}active{% endif %}" href="{% url 'student_courses' %}">
+        <span class="material-symbols-outlined">book</span>Courses
+      </a>
+      <a class="nav-item {% if active_page == 'examinations' %}active{% endif %}" href="{% url 'student_examinations' %}">
+        <span class="material-symbols-outlined">assignment
+        </span>
+        Examination
+      </a>
+      <a class="nav-item {% if active_page == 'results' %}active{% endif %}" href="{% url 'student_results' %}">
+        <span class="material-symbols-outlined">insert_chart
+        </span>Results
+      </a>
+      <a class="nav-item {% if active_page == 'profile' %}active{% endif %}" href="{% url 'student_profile' %}">
+        <span class="material-symbols-outlined">perm_identity
+        </span>Profile
+      </a>
+      <a class="nav-item {% if active_page == 'announcements' %}active{% endif %}" href="{% url 'student_announcements' %}">
+        <span class="material-symbols-outlined">notifications</span>Announcements
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a class="nav-item logout" href="#">
+        <span class="material-symbols-outlined">logout</span>Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ====MAIN==== -->
+  <div class="main">
+
+    <!-- Topbar -->
+     <header class="top-bar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <span class="material-symbols-outlined">density_medium</span>
+      </button>
+      <span class="topbar-title">Student Dashboard</span>
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Messages">
+          <span class="material-symbols-outlined">message</span>
+        </button>
+        <button class="icon-btn" title="Notifications">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="badge">1</span>
+        </button>
+        <button class="avatar-btn" title="Profile">AG</button>
+      </div>
+    </header>
+
+    <main class="content">
+      {% block content %}
+      {% endblock %}
+    </main>
+
+    <footer class="footer">EduExam &copy; 2026</footer>
+  </div>
+
+  <script src="{% static 'assets\js\student_account.js' %}"></script>  
+</body>
+</html>

@@ -1,0 +1,108 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="icon" type="image/x-icon" href="{% static 'assets/images/favicon.ico'%}">
+  <link rel="stylesheet" href="{% static 'assets/css/home_style.css' %}">
+  <title>EduExam - Online Examination and Education System</title>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="logo">
+      <img src="{% static 'assets/images/logo.png' %}" alt="logo">
+      <p class="logo-name">EduExam</p>
+    </div>
+
+    <div class="nav-link" id="nav-link">
+      <a href="#" class="active">Home</a>
+      <a href="#">Exams</a>
+      <a href="#">Practice</a>
+      <a href="#">Materials</a>
+      <a href="#">About Us</a>
+    </div>
+    <div class="auth-buttons">
+      <a href="{% url 'auth_page' 'student' %}" class="btn btn-blue-solid"> Student Login <i class="fa-solid fa-caret-down"></i></a>
+
+      <a href="{% url 'auth_page' 'teacher' %}" class="btn btn-blue-solid"> Teacher Login <i class="fa-solid fa-caret-down"></i></a>
+
+      <button class="btn btn-blue-solid">Admin Portal<i class="fa-solid fa-caret-down"></i></button>
+    </div>
+    <div class="menu-toggle" id="mobile-menu">
+      <i class="fa-solid fa-bars"></i>
+    </div>
+  </nav>
+  <div class="hero-section">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1>Secure Online Exams & Comprehensive Learning for Students.</h1>
+        <p>Attempt with Confidence, Prepare with Purpose.</p>
+        <button class="btn btn-blue-solid">Read More</button>
+      </div>
+      <div class="hero-image-wrapper">
+        <img src="{% static 'assets/images/home_bg.png' %}" alt="home">
+      </div>
+    </div>
+
+    <div class="cards-background-section">
+
+      <div class="cards-container">
+        <div class="info-card">
+          <div class="icon-circle green-icon"><i class="fa-solid fa-user-check"></i></div>
+          <div class="card-content">
+            <h3>Secure Exams</h3>
+            <ul>
+              <li>Face Verification</li>
+              <li>Live Monitoring</li>
+              <li>Anti-Cheating</li>
+            </ul>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="icon-circle green-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+          <div class="card-content">
+            <h3>Practice & Prepare</h3>
+            <ul>
+              <li>Mock Test</li>
+              <li>Subject Materials</li>
+            </ul>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="icon-circle green-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+          <div class="card-content">
+            <h3>For Teachers</h3>
+            <ul>
+              <li>Create Exams</li>
+              <li>Monitor Progress</li>
+            </ul>
+          </div>
+        </div>
+        <div class="bottom-cta">
+          <button class="btn btn-green">Get Started</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!--------- Footer Section ---------->
+  <footer class="simple-footer">
+    <div class="footer-links">
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms & Conditions</a>
+      <a href="#">Contact Support</a>
+    </div>
+    <div class="footer-social">
+      <a href="#" aria-label="Follow us on Facebook"><i class="fab fa-facebook-f"></i></a>
+      <a href="#" aria-label="Follow us on Twitter"><i class="fab fa-twitter"></i></a>
+      <a href="#" aria-label="Follow us on Instagram"><i class="fab fa-instagram"></i></a>
+      <a href="#" aria-label="Follow us on LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+    </div>
+  </footer>
+  
+  <script src="{% static 'assets/js/home_script.js' %}"></script>
+</body>
+</html>

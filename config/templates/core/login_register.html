@@ -1,0 +1,118 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="icon" type="image/x-icon" href="{% static 'assets/images/favicon.ico'%}">
+    <link rel="stylesheet" href="{% static 'assets/css/login_style.css' %}" />
+    <title> {{ role }} Login </title>
+</head>
+<body>
+    <div class="container">
+        <!--- login form --->  
+        <div class="form-box login">
+            <form name="login" method="POST" action="{% url 'insert_login' role %}">
+                {% csrf_token %}
+                <h1>{{ role|title }} Login</h1>
+                <div class="input-box">
+                    <input type="text" name="lusername" placeholder="{% if role == 'student' %}Roll Number{% else %}Teacher ID{% endif %}" required />
+                    <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="input-box">
+                    <input type="password" name="lpassword" id="login_pass" placeholder="Password" required />
+                    <i class="fa-solid fa-lock toggle-icon" id="login_icon" onclick="toggleSecurity('login_pass', 'login_icon')"></i>
+                </div>
+                <div class="forgot-link">
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <p>or log in with social platform</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fa-brands fa-google"></i></a>
+                    <a href="#"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#"><i class="fa-brands fa-github"></i></a>
+                    <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+                </div>
+            </form>
+        </div>
+
+    <!--- Register form ---> 
+    <div class="form-box login register">
+        <form name="register" method="POST" action="{% url 'insert_register' role %}">
+            {% csrf_token %}
+            <h1>{{ role|title }} Registration</h1>
+            <div class="input-box">
+                <input type="text" name="rusername" placeholder="Full Name" required />
+                <i class="fa-solid fa-circle-user"></i>
+            </div>
+            <div class="input-box">
+                <input type="email" name="remail" placeholder="Email ID" required />
+                <i class="fa-solid fa-envelope"></i>
+            </div>
+            {% if role == "student" %}
+            <div class="input-box">
+                <input type="date" name="dob" id="dob_input" title="Date of Birth" required>
+                <i class="fa-solid fa-calendar-days" onclick="document.getElementById('dob_input').showPicker();"></i>
+            </div>
+            <div class="input-box">
+                <input type="text" name="roll_number" placeholder="Roll Number" required>
+                <i class="fa-solid fa-user"></i>
+            </div>
+            {% elif role == "teacher" %}
+            <div class="input-box">
+                <input type="text" name="teacher_id" placeholder="Teacher ID" required>
+                <i class="fa-solid fa-user"></i>
+            </div>
+            {% endif %}
+            <div class="input-box">
+                <input type="password" name="rpassword" id="reg_pass" placeholder="Password" minlength="8" required />
+                <i class="fa-solid fa-lock toggle-icon" id="reg_icon" onclick="toggleSecurity('reg_pass', 'reg_icon')"></i>
+            </div>
+            <div class="input-box">
+                <input type="password" name="cpassword" id="confirm_pass" placeholder="Confirm Password" required />
+                <i class="fa-solid fa-lock toggle-icon" id="confirm_icon" onclick="toggleSecurity('confirm_pass', 'confirm_icon')"></i>
+            </div>
+            <button type="submit" class="btn">Register</button>
+            <p>or register in with social platform</p>
+            <div class="social-icons">
+                <a href="#"><i class="fa-brands fa-google"></i></a>
+                <a href="#"><i class="fa-brands fa-facebook"></i></a>
+                <a href="#"><i class="fa-brands fa-github"></i></a>
+                <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+            </div>
+        </form>
+    </div>
+        
+        <!--- Toggle Box ---> 
+        <div class="toggle-box">
+           
+            <!--- Toggle Box Left ---> 
+            <div class="toggle-panel toggle-left">
+                <h1>Hello,Welcome</h1>
+                <p> Don't have an account?</p>
+                <button class="btn register-btn">Register</button>
+            </div>
+        
+            <!--- Toggle Box Right ---> 
+            <div class="toggle-panel toggle-right">
+                <h1>Welcome Back!</h1>
+                <p>Already Have an account?</p>
+                <button class="btn login-btn">Login</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alert Message Pop-up -->
+
+    {% if messages %}
+        {% for message in messages %}
+            <div id="django-messages" data-msg="{{ message }}" style="display:none;"></div>
+        {% endfor %}
+    {% endif %}
+
+    <script src="{% static 'assets/js/login_script.js' %}"></script>
+
+</body>
+</html>

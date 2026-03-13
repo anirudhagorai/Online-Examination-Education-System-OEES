@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="{% static 'assets/images/favicon.ico'%}">
+  <link rel="stylesheet" href="{% static 'assets/css/verify_otp.css' %}">
+  <title>OTP Verification</title>
+</head>
+<body>
+  <div class="container">
+    <h2>Email OTP Verification</h2>
+    <p>Enter the 6-digit OTP sent to your email</p>
+    <div id="otp-data" data-username="{{ username }}" data-role="{{ role }}"></div>
+    <form id="otpForm">
+      {% csrf_token %}
+      <div class="otp-box">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+        <input type="text" maxlength="1">
+      </div>
+      <button type="submit">Verify OTP</button>
+    </form>
+    <div class="timer">
+      OTP expires in <span id="countdown">05:00</span>
+    </div>
+
+    <button id="resendBtn" class="resend" disabled>Resend OTP (30s)</button>
+  </div>
+
+
+
+  <script src="{% static 'assets/js/verify_otp.js' %}"></script>
+
+</body>
+</html>

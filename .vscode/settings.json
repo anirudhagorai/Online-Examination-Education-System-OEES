@@ -1,0 +1,8 @@
+{
+  "css.hover.references": true,
+  "scss.hover.references": true,
+  "less.hover.references": true,
+  "githubPullRequests.useReviewMode": "auto",
+  "terminal.integrated.suggest.enabled": true,
+  "terminal.integrated.ignoreBracketedPasteMode": true
+}
