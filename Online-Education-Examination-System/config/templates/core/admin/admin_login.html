@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="icon" type="image/x-icon" href="{% static 'assets/images/favicon.ico'%}">
+    <link rel="stylesheet" href="{% static 'assets/css/admin_login.css' %}" />
+    <title> Admin Login </title>
+</head>
+<body>
+    <div class="container">
+      <!--- login form --->  
+      <div class="form-box login">
+        <form name="login" method="POST">
+          {% csrf_token %}
+          <h1>Admin Sign in</h1>
+          <div class="input-box">
+            <input type="text" name="username" placeholder="Admin Username" required />
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="input-box">
+            <input type="password" id="login_pass" name="password" placeholder="Password" required />
+             <i class="fa-solid fa-lock toggle-icon" id="login_icon" onclick="toggleSecurity('login_pass', 'login_icon')"></i>
+          </div>
+          <button type="submit" class="btn">Login</button>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- Alert Message Pop-up -->
+
+    {% if messages %}
+      {% for message in messages %}
+        <div id="django-messages" data-msg="{{ message }}" style="display:none;"></div>
+      {% endfor %}
+    {% endif %}
+
+    <script src="{% static 'assets/js/admin_login.js' %}"></script>
+
+</body>
+</html>

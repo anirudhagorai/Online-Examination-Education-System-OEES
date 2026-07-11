@@ -1,0 +1,421 @@
+{% extends 'core/student_base.html' %}
+{% block title %}Student Courses{% endblock %}
+{% block page_title %}Student Courses{% endblock %}
+{% block content %}
+
+  <!-- CONTENT -->
+  <div class="page-header">
+    <div>
+      <h2>My Courses</h2>
+      <p>Track your enrolled courses and academic progress</p>
+    </div>
+    <button class="btn-primary" onclick="openEnrollModal()">
+      <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+      Enroll in Course
+    </button>
+  </div>
+
+  <!-- Stats Row -->
+   <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon blue"><span class="material-symbols-outlined">menu_book</span></div>
+      <div class="stat-info">
+        <div class="val">{{ courses|length }}</div>
+        <div class="lbl">Total Enrolled</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><span class="material-symbols-outlined">check_circle</span></div>
+      <div class="stat-info">
+        <div class="val">{{ completed_count }}</div>
+        <div class="lbl">Completed</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange"><span class="material-symbols-outlined">schedule</span></div>
+      <div class="stat-info">
+        <div class="val">{{ inprogress_count }}</div>
+        <div class="lbl">In Progress</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon purple"><span class="material-symbols-outlined">bar_chart</span></div>
+      <div class="stat-info">
+        <div class="val">{{ avg_progress }}%</div>
+        <div class="lbl">Avg. Progress</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="s-icon material-symbols-outlined">search</span>
+      <input class="search-input" id="courseSearch" type="text" placeholder="Search courses..." oninput="filterCourses()" />
+    </div>
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" onclick="setFilter('all',this)">All</button>
+      <button class="filter-tab" onclick="setFilter('active',this)">Active</button>
+      <button class="filter-tab" onclick="setFilter('completed',this)">Completed</button>
+      <button class="filter-tab" onclick="setFilter('pending',this)">Pending</button>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="gridBtn" onclick="setView('grid')" title="Grid">
+        <span class="material-symbols-outlined">grid_view</span>
+      </button>
+      <button class="view-btn" id="listBtn" onclick="setView('list')" title="List">
+        <span class="material-symbols-outlined">view_list</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Grid View -->
+  <div class="courses-grid" id="coursesGrid">
+
+  {% for course in courses %}
+
+  <div class="course-card"
+      data-status="{{ course.status }}"
+      data-name="{{ course.name|lower }}">
+
+  <a href="{% url 'course_player' course.id %}"
+    class="thumb-wrap"
+    style="display:block;text-decoration:none;">
+
+      {% with video=course.videos.first %}
+
+          {% if video and video.thumbnail %}
+
+              <img
+                  src="{{ video.thumbnail.url }}"
+                  alt="{{ course.name }}"
+                  style="
+                      width:100%;
+                      height:100%;
+                      object-fit:cover;
+                  ">
+
+          {% else %}
+
+              <div class="thumb-placeholder">
+                  <span class="material-symbols-outlined"
+                        style="
+                          color:rgba(255,255,255,.4);
+                          font-size:48px;
+                        ">
+                      play_circle
+                  </span>
+              </div>
+
+          {% endif %}
+
+      {% endwith %}
+
+      <div class="thumb-overlay">
+          <div class="play-btn">
+              <span class="material-symbols-outlined">
+                  play_arrow
+              </span>
+          </div>
+      </div>
+
+      {% if course.total_videos %}
+      <div class="thumb-badge">
+          <span class="material-symbols-outlined"
+                style="font-size:13px;">
+              video_library
+          </span>
+
+          {{ course.total_videos }} videos
+      </div>
+      {% endif %}
+
+  </a>
+
+  <div class="c-banner {{ course.color|default:'blue' }}"></div>
+
+  <div class="c-body">
+
+      <div class="c-top">
+
+          <div class="c-name">
+              {{ course.name }}
+          </div>
+
+          <!-- {% if course.status == 'active' %}
+              <span class="badge active">Active</span>
+          {% elif course.status == 'completed' %}
+              <span class="badge completed">Completed</span>
+          {% else %}
+              <span class="badge pending">Pending</span>
+          {% endif %} -->
+
+          {% if course.student_status == 'completed' %}
+            <span class="badge completed">Completed</span>
+          {% else %}
+            <span class="badge active">Active</span>
+          {% endif %}
+
+      </div>
+
+      <div class="c-instructor">
+          <span class="material-symbols-outlined">
+              person
+          </span>
+
+          {{ course.teacher.get_full_name|default:"Instructor" }}
+      </div>
+
+      <div class="pill-row">
+
+          {% if course.total_videos %}
+          <span class="pill">
+              {{ course.total_videos }} Videos
+          </span>
+          {% endif %}
+
+          {% if course.total_duration %}
+          <span class="pill">
+              {{ course.total_duration }}
+          </span>
+          {% endif %}
+
+      </div>
+
+      {% with prog=course.progress|default:0 %}
+
+      <div class="prog-label">
+          <span>Progress</span>
+          <span>{{ prog }}%</span>
+      </div>
+
+      <div class="prog-track">
+          <div class="prog-fill {{ course.color|default:'blue' }}"
+              style="width:{{ prog }}%">
+          </div>
+      </div>
+
+      {% endwith %}
+
+      <div class="c-footer">
+
+          <a href="{% url 'course_player' course.id %}"
+            class="btn-c primary">
+
+              <span class="material-symbols-outlined"
+                    style="font-size:14px;">
+                  play_circle
+              </span>
+
+              Continue
+
+          </a>
+
+      </div>
+
+  </div>
+
+  </div>
+
+  {% empty %}
+
+  <div class="empty-state">
+      <span class="material-symbols-outlined">
+          menu_book
+      </span>
+
+      <p>
+          No courses yet.
+      </p>
+  </div>
+
+  {% endfor %}
+
+  </div>
+
+
+  <!-- List View -->
+  <div class="courses-list" id="coursesList">
+    {% for course in courses %}
+    <div class="list-item" data-status="{{ course.status }}" data-name="{{ course.name|lower }}">
+
+      <!-- Color bar -->
+       <div class="l-bar {{ course.color|default:'bluee' }}"></div>
+      
+      <!-- Youtube Thumbnail -->
+      <a href="{% url 'course_player' course.id %}" class="l-thumb" style="position:relative; display:block; width:120px; height:68px; overflow:hidden;">
+        {% with video=course.videos.first %}
+          {% if video and video.thumbnail %}
+            <img src="{{ video.thumbnail.url }}" alt="{{ course.name }}" style="width:100%; height:100%; object-fit:cover;">
+          {% elif course.youtube_id %}
+            <img src="https://img.youtube.com/vi/{{ course.youtube_id }}/mqdefault.jpg" alt="{{ course.name }}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'" />
+          {% else %}
+            <div style="position: absolute;inset: 0;background: linear-gradient(135deg,#1c5ebc,#3a77d4); display: flex;align-items: center;justify-content: center;">
+              <span class="material-symbols-outlined" style="color: rgba(255, 255, 255, 0.5);font-size: 24px;">play_circle</span>
+            </div>
+          {% endif %}
+        {% endwith %}
+        <div class="l-thumb-ov">
+          <div class="l-play">
+            <span class="material-symbols-outlined">play_arrow</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Info -->
+      <div class="l-main">
+        <div class="l-title">{{ course.name }}</div>
+        <div class="l-sub">
+          {{ course.instructor|default:"Instructor" }}
+          {% if course.total_videos %} . {{ course.total_videos }} videos{% endif %}
+          {% if course.total_duration %} . {{ course.total_duration }}{% endif %}
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div class="l-prog">
+        {% with prog=course.progress|default:0 %}
+        <div class="prog-label">
+          <span>Progress</span>
+          <span>{{ prog }}%</span>
+        </div>
+        <div class="prog-track">
+          <div class="prog-fill {{ course.color|default:'blue' }}" style="width:{{ prog }}%"></div>
+        </div>
+        {% endwith %}
+      </div>
+
+      <!-- Actions -->
+      <div class="l-actions">
+        {% if course.status == 'active' %}
+          <span class="badge active">Active</span>
+          <a href="{% url 'course_player' course.id %}" class="btn-c primary" style="flex: none;width: 100px;">
+            <span class="material-symbols-outlined" style="font-size: 13px;">play_circle</span>
+            Continue
+          </a>
+        {% elif course.status == 'completed' %}
+          <span class="badge completed">Completed</span>
+          <a href="#" class="btn-c success" style="flex: none;width: 110px;">
+            <span class="material-symbols-outlined" style="font-size: 13px;">workspace_premium</span>
+            Certificate
+          </a>
+        {% else %}
+          <span class="badge pending">Pending</span>
+          <a href="{% url 'course_player' course.id %}" class="btn-c warn" style="flex: none;width: 100px;">
+            <span class="material-symbols-outlined" style="font-size: 13px;">play_circle</span>
+            Start
+          </a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% empty %}
+    <div class="modal-empty">
+      <span class="material-symbols-outlined" style="font-size: 40px;display: block;margin-bottom: 8px;">menu_book</span>
+      No courses found.
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Enrollment Modal -->
+  <div class="enroll-overlay" id="enrollModal">
+    <div class="enroll-modal">
+      <div class="enroll-head">
+        <div>
+          <h3>Available Courses</h3>
+          <p>Choose a course to enroll in</p>
+        </div>
+        <button class="enroll-close" onclick="closeEnrollModal()">X</button>
+      </div>
+
+      <div class="enroll-search-bar">
+        <div class="enroll-search-inner">
+          <span class="esi material-symbols-outlined">search</span>
+          <input class="enroll-search-input" type="text" placeholder="Search available courses..." oninput="searchAvailable(this.value)" />
+        </div>
+      </div>
+
+      <div class="avail-grid" id="availGrid">
+        {% for course in available_courses %}
+        <div class="avail-card" data-avail-name="{{ course.name|lower }}">
+          <!-- <div class="avail-thumb">
+            {% if course.youtube_id %}
+              <img src="https://img.youtube.com/vi/{{ course.youtube_id }}/mqdefault.jpg" alt="{{ course.name }}" onerror="this.style.display='none'" />
+            {% else %}
+              <div class="avail-placeholder">
+                <span class="material-symbols-outlined" style="color: rgba(255, 255, 255, 0.5);font-size: 36px;">play_circle</span>
+              </div>
+            {% endif %}
+          </div> -->
+          <!-- ------------------------------------new---------------------------------- -->
+
+          <!-- <div class="avail-thumb">
+            {% if course.thumbnail %}
+              <img src="{{ course.thumbnail.url }}" alt="{{ course.name }}" />
+            {% elif course.youtube_id %}
+              <img src="https://img.youtube.com/vi/{{ course.youtube_id }}/mqdefault.jpg" alt="{{ course.name }}" onerror="this.style.display='none'" />
+            {% else %}
+              <div class="avail-placeholder">
+                <span class="material-symbols-outlined" style="color: rgba(255, 255, 255, 0.5);font-size: 36px;">play_circle</span>
+              </div>
+            {% endif %}
+          </div> -->
+
+          <div class="avail-thumb">
+  {% with video=course.videos.first %}
+    {% if video and video.thumbnail %}
+      <img src="{{ video.thumbnail.url }}" alt="{{ course.name }}" style="width:100%;height:100%;object-fit:cover;" />
+    {% elif course.youtube_id %}
+      <img src="https://img.youtube.com/vi/{{ course.youtube_id }}/mqdefault.jpg" alt="{{ course.name }}" onerror="this.style.display='none'" />
+    {% else %}
+      <div class="avail-placeholder">
+        <span class="material-symbols-outlined" style="color: rgba(255, 255, 255, 0.5);font-size: 36px;">play_circle</span>
+      </div>
+    {% endif %}
+  {% endwith %}
+</div>
+          <div class="avail-body">
+            <div class="avail-name">{{ course.name }}</div>
+            <div class="avail-inst">
+              <span class="material-symbols-outlined" style="font-size: 13px;">person</span>
+              {{ course.instructor|default:"Instructor" }}
+            </div>
+            <div class="avail-pills">
+              {% if course.total_videos %}
+              <span class="avail-pill">
+                <span class="material-symbols-outlined" style="font-size: 12px;">play_lesson</span>
+                {{ course.total_videos }} Videos
+              </span>
+              {% endif %}
+              {% if course.total_duration %}
+              <span class="avail-pill">
+                <span class="material-symbols-outlined" style="font-size: 12px;">schedule</span>
+                {{ course.total_duration }}
+              </span>
+              {% endif %}
+            </div>
+            {% if course.description %}
+            <div class="avail-desc">{{ course.description|truncatechars:80 }}</div>
+            {% endif %}
+            <button class="btn-enroll-now" id="enroll-btn-{{ course.id }}" onclick="enrollCourse({{ course.id }}, '{{ course.name }}', this)">
+              <span class="material-symbols-outlined" style="font-size: 14px;">add_circle</span>
+              Enroll Now
+            </button>
+          </div>
+        </div>
+        {% empty %}
+        <div class="modal-empty">
+          <span class="material-symbols-outlined">menu_book</span>
+          <p>No courses available for enrollment right now.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span class="material-symbols-outlined" style="font-size: 18px;" id="toastIcon">check_circle</span>
+    <span id="toastMsg">Enrolled successfully!</span>
+  </div>
+{% endblock %}

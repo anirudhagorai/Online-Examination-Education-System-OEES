@@ -1,0 +1,295 @@
+{% extends 'core/student_base.html' %}
+{% block title %}Examinations{% endblock %}
+{% block page_title %}Examinations{% endblock %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h2>My Examination</h2>
+      <p>View and manage all your scheduled and completed exams</p>
+    </div>
+  </div>
+  
+  <!-- Stats Row -->
+  <div class="stats-row">
+    <div class="sc">
+      <div class="si blue">
+        <span class="material-symbols-outlined">assignment</span>
+      </div>
+      <div>
+        <div class="sv">{{ total_exams }}</div>
+        <div class="sl">Total Exams</div>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="si orange">
+        <span class="material-symbols-outlined">schedule</span>
+      </div>
+      <div>
+        <div class="sv">{{ upcoming_count }}</div>
+        <div class="sl">Upcoming</div>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="si green">
+        <span class="material-symbols-outlined">play_circle</span>
+      </div>
+      <div>
+        <div class="sv">{{ ongoing_count }}</div>
+        <div class="sl">Ongoing</div>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="si purple">
+        <span class="material-symbols-outlined">check_circle</span>
+      </div>
+      <div>
+        <div class="sv">{{ completed_count }}</div>
+        <div class="sl">Completed</div>
+      </div>
+    </div>
+    <div class="sc">
+      <div class="si red">
+        <span class="material-symbols-outlined">cancel</span>
+      </div>
+      <div>
+        <div class="sv">{{ missed_count }}</div>
+        <div class="sl">Missed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="showTab('upcoming',this)">Upcoming <span class="tab-count">{{ upcoming_event }}</span></button>
+    <button class="tab-btn" onclick="showTab('ongoing',this)">Ongoing <span class="tab-count">{{ ongoing_count }}</span></button>
+    <button class="tab-btn" onclick="showTab('completed',this)">Completed <span class="tab-count">{{ completed_count }}</span></button>
+    <button class="tab-btn" onclick="showTab('missed',this)">Missed <span class="tab-count">{{ missed_count }}</span></button>
+  </div>
+
+  <!-- Upcoming -->
+  <div class="tab-panel active" id="tab-upcoming">
+    <div class="exam-grid">
+      {% for exam in upcoming_exams %}
+      <div class="ecard">
+        <div class="ec-banner {{ exams.color|default:'blue' }}"></div>
+        <div class="ec-body">
+          <div class="ec-top">
+            <div class="ec-name">{{ exam.title }}</div>
+            <span class="badge upcoming">Upcoming</span>
+          </div>
+          <div class="ec-course">
+            <span class="material-symbols-outlined" style="font-size: 13px;">menu_book</span>
+            {{ exam.course.name }}
+          </div>
+          <div class="ec-meta">
+            <span class="ec-chip">
+              <span class="material-symbols-outlined" style="font-size: 13px;">schedule</span>
+              {{ exam.duration }} mins
+            </span>
+            <span class="ec-chip">
+              <span class="material-symbols-outlined" style="font-size: 13px;">quiz</span>
+              {{ exam.total_questions }} Questions
+            </span>
+            <span class="ec-chip">{{ exam.total_marks }} Marks</span>
+          </div>
+          
+          <!-- Live Countdown -->
+          <div class="countdown-box">
+            <div class="cd-label">Starts in</div>
+            <div class="cd-chips">
+              <div class="cd-chip"><span class="cd-num" id="d-{{ exam.id }}">00</span><span class="cd-unit">Days</span></div>
+              <div class="cd-chip"><span class="cd-num" id="h-{{ exam.id }}">00</span><span class="cd-unit">Hrs</span></div>
+              <div class="cd-chip"><span class="cd-num" id="m-{{ exam.id }}">00</span><span class="cd-unit">Min</span></div>
+              <div class="cd-chip"><span class="cd-num" id="s-{{ exam.id }}">00</span><span class="cd-unit">Sec</span></div>
+            </div>
+          </div>
+
+          <div class="ec-footer">
+            <button class="btn-ec primary" onclick="openModal('{{ exam.id }}','{{ exam.title }}','{{ exam.duration }}','{{ exam.total_marks }}','{{ exam.total_questions }}')">
+              <span class="material-symbols-outlined" style="font-size: 14px;">play_circle</span>
+              Prepare &amp; Join
+            </button>
+            <button class="btn-ec outline">View Syllabus</button>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-state">
+        <span class="material-symbols-outlined">event_available</span>
+        <p>No upcoming exams scheduled.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Ongoing -->
+  <div class="tab-panel" id="tab-ongoing">
+    <div class="exam-grid">
+      {% for exam in ongoing_exams %}
+      <div class="ecard">
+        <div class="ec-banner green"></div>
+        <div class="ec-body">
+          <div class="ec-top">
+            <div class="ec-name">{{ exam.title }}</div>
+            <span class="badge ongoing">Ongoing</span>
+          </div>
+          <div class="ec-course">
+            <span class="material-symbols-outlined" style="font-size: 13px;">menu_book</span>
+            {{ exam.course.name }}
+          </div>
+          <div class="ec-meta">
+            <span class="ec-chip">{{ exam.duration }} mins
+            </span>
+            <span class="ec-chip">{{ exam.total_questions }} Questions
+            </span>
+            <span class="ec-chip">{{ exam.total_marks }} Marks</span>
+          </div>
+          <div class="timer-bar-wrap">
+            <div class="timer-bar-label">
+              <span>Time Remaining</span>
+              <span id="live-timer-{{ exam.id }}">--:--</span>
+            </div>
+            <div class="tbar-track">
+              <div class="tbar-fill" id="live-bar-{{ exam.id }}" style="width: 100%;"></div>
+            </div>
+          </div>
+          <div class="ec-footer">
+            <button class="btn-ec green">
+              <span class="material-symbols-outlined" style="font-size: 14px;">play_arrow</span>
+              Resume Exam
+            </button>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-state">
+        <span class="material-symbols-outlined">hourglass_empty</span>
+        <p>No exams currently ongoing.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Completed -->
+  <div class="tab-panel" id="tab-completed">
+    <div class="exam-grid">
+      {% for exam in completed_exams %}
+      <div class="ecard">
+        <div class="ec-banner {{ exams.color|default:'blue' }}"></div>
+        <div class="ec-body">
+          <div class="ec-top">
+            <div class="ec-name">{{ exam.title }}</div>
+            <span class="badge completed">Completed</span>
+          </div>
+          <div class="ec-course">
+            <span class="material-symbols-outlined" style="font-size: 13px;">menu_book</span>
+            {{ exam.course.name }}
+          </div>
+          <div class="ec-meta">
+            <span class="ec-chip">Submitted: {{ exam.submitted_date|date:"M d" }}
+            </span>
+            <span class="ec-chip">{{ exam.total_questions }} Questions
+            </span>
+          </div>
+          <div class="score-row">
+            <div class="big-score">
+              {% widthratio exam.obtained_marks exam.total_marks 100 %}
+            </div>
+            <div class="score-detail" style="margin-left: 10px;">
+              <div class="sg">Grade: {{ exam.grade }}</div>
+              <div class="ss">{{ exam.obtainer_marks }} / {{ exam.total_marks }} Marks</div>
+            </div>
+          </div>
+          <div class="sbar-track">
+            {% with pct=exam.obtained_marks|stringformat:"s" %}
+            <div class="sbar-fill {% if exam.obtained_marks >= 80 %}green{% elif exam.obtained_marks >= 60 %}blue{% else %}orange{% endif %}" style="width:{% widthratio exam.obtained_marks exam.total_marks 100 %}%"></div>
+            {% endwith %}
+          </div>
+          <div class="ec-footer">
+            <button class="btn-ec primary">
+              <span class="material-symbols-outlined" style="font-size: 14px;">download</span>
+              Download
+            </button>
+            <button class="btn-ec outline">Full Report</button>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-state">
+        <span class="material-symbols-outlined">assignment_turned_in</span>
+        <p>No completed exams yet.</p>
+      </div>
+      {% endfor %}  
+    </div>
+  </div>
+  
+  <!-- Missed -->
+  <div class="tab-panel" id="tab-missed">
+    <div class="exam-grid">
+      {% for exam in missed_exams %}
+      <div class="ecard">
+        <div class="ec-banner red"></div>
+        <div class="ec-body">
+          <div class="ec-top">
+            <div class="ec-name">{{ exam.title }}</div>
+            <span class="badge missed">Missed</span>
+          </div>
+          <div class="ec-course">
+            <span class="material-symbols-outlined" style="font-size: 13px;">menu_book</span>
+            {{ exam.course.name }}
+          </div>
+          <div class="ec-meta">
+            <span class="ec-chip">Was: {{ exam.submitted_date|date:"M d, g:i A" }}
+            </span>
+            <span class="ec-chip">{{ exam.total_questions }} Questions
+            </span>
+          </div>
+          <div class="missed-alert">
+            <span class="material-symbols-outlined" style="font-size: 16px;">cancel</span>
+            You missed this exam. Please contact your instructor.
+          </div>
+          <div class="ec-footer">
+            <button class="btn-ec red">
+              <span class="material-symbols-outlined" style="font-size: 14px;">chat</span>
+              Contact Instructor
+            </button>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-state">
+        <span class="material-symbols-outlined">event_available</span>
+        <p>You haven't missed any exams.</p>
+      </div>
+      {% endfor %}  
+    </div>
+  </div>
+  
+
+  <!-- Join Exam Modal -->
+  <div class="modal-overlay" id="examModal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div class="modal-title" id="modalTitle">Exam Title</div>
+        <button class="modal-close" onclick="closeModal()">X</button>
+      </div>
+      <div class="modal-info-grid">
+        <div class="mi"><div class="mi-label">Duration</div><div class="mi-val" id="modalDuration">-- mins</div></div>
+        <div class="mi"><div class="mi-label">Total Marks</div><div class="mi-val" id="modalMark">--</div></div>
+        <div class="mi"><div class="mi-label">Pass Mark</div><div class="mi-val">40%</div></div>
+      </div>
+      <div class="modal-warning">
+        ⚠️ Please read carefully before starting: <br>
+        • You cannot leave the exam once it begins. <br>
+        • Switching browser tabs will strictly monitored. <br>
+        • Ensure a stable internet connection.
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+        <button class="modal-btn start" id="modalStartBtn">Start Exam</button>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

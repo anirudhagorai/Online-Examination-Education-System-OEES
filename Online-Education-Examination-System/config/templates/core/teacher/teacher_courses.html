@@ -1,0 +1,362 @@
+{% extends 'core/teacher_base.html' %}
+{% block title %}Course{% endblock %}
+{% block page_title %}Course{% endblock %}
+
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>My Courses</h2>
+    <p>Manage your courses</p>
+  </div>
+  <button class="btn-primary" onclick="openAddModal()">
+    <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+    Add New Course
+  </button>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon blue"><span class="material-symbols-outlined">menu_book</span></div>
+    <div><div class="stat-val">{{ total_courses }}</div><div class="stat-lbl">Total Courses</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><span class="material-symbols-outlined">check_circle</span></div>
+    <div><div class="stat-val">{{ active_courses }}</div><div class="stat-lbl">Active</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><span class="material-symbols-outlined">group</span></div>
+    <div><div class="stat-val">{{ total_students }}</div><div class="stat-lbl">Total Students</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><span class="material-symbols-outlined">play_lesson</span></div>
+    <div><div class="stat-val">{{ total_videos }}</div><div class="stat-lbl">Total Videos</div></div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="s-icon material-symbols-outlined">search</span>
+    <input class="search-input" id="courseSearch" type="text" placeholder="Search Courses..." oninput="filterCourses()" />
+  </div>
+  <div class="filter-tabs" id="filterTabs">
+    <button class="filter-tab active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-tab" onclick="setFilter('active',this)">Active</button>
+    <button class="filter-tab" onclick="setFilter('pending',this)">Pending</button>
+    <button class="filter-tab" onclick="setFilter('completed',this)">Completed</button>
+    <button class="filter-tab" onclick="setFilter('draft',this)">Draft</button>
+  </div>
+  <div class="view-toggle">
+    <button class="view-btn active" id="gridBtn" onclick="setView('grid')" title="Grid">
+      <span class="material-symbols-outlined">grid_view</span>
+    </button>
+    <button class="view-btn" id="listBtn" onclick="setView('list')" title="List">
+      <span class="material-symbols-outlined">view_list</span>
+    </button>
+  </div>
+</div>
+
+<!-- Grid View -->
+<div class="courses-grid" id="coursesGrid">
+  {% for course in courses %}
+  <div class="course-card" data-status="{{ course.status }}" data-name="{{ course.name|lower }}">
+
+    <!-- Thumbnail -->
+    <div class="thumb-wrap">
+
+        {% with video=course.videos.first %}
+            {% if video and video.thumbnail %}
+                <img src="{{ video.thumbnail.url }}"
+                    alt="{{ course.name }}"
+                    style="width:100%;height:100%;object-fit:cover;">
+            {% else %}
+                <div class="thumb-placeholder">
+                    <span class="material-symbols-outlined"
+                          style="color:rgba(255,255,255,.4);font-size:48px;">
+                        play_circle
+                    </span>
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% if course.total_videos %}
+        <div class="thumb-badge">
+            <span class="material-symbols-outlined"
+                  style="font-size:13px;">
+                video_library
+            </span>
+            {{ course.total_videos }} videos
+        </div>
+        {% endif %}
+
+    </div>
+
+    <div class="c-banner {{ course.color|default:'blue' }}"></div>
+    <div class="c-body">
+      <div class="c-top">
+        <div class="c-name">{{ course.name }}</div>
+        <span class="badge {{ course.status|default:'draft' }}">{{ course.status|capfirst }}</span>
+      </div>
+      {% if course.description %}
+      <div class="c-desc">{{ course.description }}</div>
+      {% endif %}
+      <div class="pill-row">
+        <span class="pill">
+          <span class="material-symbols-outlined" style="font-size: 13px;">group</span>
+          {{ course.students.count }} Students
+        </span>
+        {% if course.total_videos %}
+        <span class="pill">
+          <span class="material-symbols-outlined" style="font-size: 13px;">play_lesson</span>
+          {{ course.total_videos }} Videos
+        </span>
+        {% endif %}
+        {% if course.total_duration %}
+        <span class="pill">
+          <span class="material-symbols-outlined" style="font-size: 13px;">schedule</span>
+          {{ course.total_duration }}
+        </span>
+        {% endif %}
+      </div>
+      <!-- Avg student progress -->
+      {% with prog=course.avg_progress|default:0 %}
+      <div class="prog-label">
+        <span>Avg. Progress</span>
+        <span>{{ prog }}%</span>
+      </div>
+      <div class="prog-track">
+        <div class="prog-fill {{ course.color|default:'blue' }}" style="width:{{ prog }}%"></div>
+      </div>
+      {% endwith %}
+      <div class="c-footer">
+        <button class="btn-c primary" onclick="openEditModal({{ course.id }},'{{ course.name }}','{{ course.description|escapejs }}','{{ course.status }}','{{ course.color }}','{{ course.total_videos }}','{{ course.total_duration }}')">
+          <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+          Edit
+        </button>
+    
+        <button class="btn-c danger" onclick="openDeleteModal({{ course.id }},'{{ course.name }}')">
+          <span class="material-symbols-outlined" style="font-size: 13px;">delete</span>
+        </button>
+
+        <a class="btn-c outline" href="{% url 'teacher_course_player' course.id %}">
+          <span class="material-symbols-outlined" style="font-size:16px;">play_circle</span>
+          View
+        </a>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty-state">
+    <span class="material-symbols-outlined">menu_book</span>
+    <p>No courses yet. Create your first course!</p>
+    <button class="btn-primary" onclick="openAddModal()">
+      <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+      Add New Course
+    </button>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- List View -->
+<div class="courses-list" id="coursesList">
+  {% for course in courses %}
+  <div class="list-item" data-status="{{ course.status }}" data-name="{{ course.name|lower }}">
+    <div class="l-bar {{ course.color|default:'blue' }}"></div>
+    <div class="l-thumb">
+
+      {% with video=course.videos.first %}
+          {% if video and video.thumbnail %}
+              <img src="{{ video.thumbnail.url }}"
+                  alt="{{ course.name }}"
+                  style="width:100%;height:100%;object-fit:cover;">
+          {% else %}
+              <div style="
+                  position:absolute;
+                  inset:0;
+                  background:linear-gradient(135deg,#1c5ebc,#3a77d4);
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+              ">
+                  <span class="material-symbols-outlined"
+                        style="color:rgba(255,255,255,.5);font-size:22px;">
+                      play_circle
+                  </span>
+              </div>
+          {% endif %}
+      {% endwith %}
+
+  </div>
+    <div class="l-main">
+      <div class="l-title">{{ course.name }}</div>
+      <div class="l-sub">
+        {{ course.students.count }} students
+        {% if course.total_videos %} : {{ course.total_videos }} videos{% endif %}
+        {% if course.total_duration %} : {{ course.total_duration }}{% endif %}
+      </div>
+    </div>
+    <div class="l-prog">
+      {% with prog=course.avg_progress|default:0 %}
+      <div class="prog-label"><span>Avg Progress</span><span>{{ prog }}%</span></div>
+      <div class="prog-track">
+        <div class="prog-fill {{ course.color|default:'blue' }}" style="width:{{ prog }}%"></div>
+      </div>
+      {% endwith %}
+    </div>
+    <div class="l-actions">
+      <span class="badge {{ course.status|default:'draft' }}">{{ course.status|capfirst }}</span>
+      <button class="btn-c outline" style="flex: none;padding: 7px 12px;" onclick="openEditModal({{ course.id }},'{{ course.name }}','{{ course.description|escapejs }}','{{ course.status }}','{{ course.color }}','{{ course.total_videos }}','{{ course.total_duration }}')">
+        <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+          Edit
+      </button>
+      <button class="btn-c danger" style="flex: none;padding: 7px 12px;" onclick="openDeleteModal({{ course.id }},'{{ course.name }}')">
+          <span class="material-symbols-outlined" style="font-size: 13px;">delete</span>
+        </button>
+    </div>
+  </div>
+  {% empty %}
+  <div style="text-align: center;padding: 40px;color: #9ca3af;font-size: 14px;">
+    <span class="material-symbols-outlined" style="font-size: 40px;display: block;margin-bottom: 8px;">menu_book</span>
+    No courses found.
+  </div>
+  {% endfor %}
+</div>
+
+
+<!-- Add / Edit Course Modal -->
+<div class="modal-overlay" id="courseModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalTitle">Add New Course</h3>
+      <button class="modal-close" onclick="closeModal()">X</button>
+    </div>
+    <div class="modal-body">
+      <form id="courseForm" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" id="courseId" name="course_id" value="" />
+        <input type="hidden" id="selectedColor" name="color" value="blue" />
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Course Name <span>*</span></label>
+            <input type="text" class="form-control" id="courseName" name="name" placeholder="e.g. Python for Beginners" required />
+          </div>
+          <div class="form-group">
+            <label>Status <span>*</span></label>
+            <select class="form-control" name="status" id="courseStatus">
+              <option value="draft">Draft</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea class="form-control" name="description" id="courseDesc" placeholder="Short description of the course..."></textarea>
+        </div>
+        
+        <!-- <div class="form-group">
+          <label>YouTube Video ID <span>*</span></label>
+          <input type="text" class="form-control" id="youtubeId" name="youtube_id" placeholder="e.g. dQw4w9WgXcQ" oninput="previewYoutube(this.value)" />
+          <div class="form-hint">
+            From youtube.com/watch?v=<strong>THIS_PART</strong>
+          </div> -->
+          <!-- YouTube thumbnail preview -->
+          <!-- <div class="yt-preview" id="ytPreview">
+            <img id="ytThumb" src="" alt="YouTube thumbnail" />
+            <div class="yt-preview-label">
+              <span class="material-symbols-outlined" style="font-size: 16px;color: #dc2626;">smart_display</span>
+              Thumbnail preview
+            </div>
+          </div>
+        </div> -->
+       <div class="form-group">
+          <label>Upload MP4 Video <span>*</span></label>
+
+          <input
+              type="file"
+              id="videoFile"
+              class="form-control"
+              name="video_file"
+              accept="video/mp4">
+      </div>
+
+      <div class="form-group">
+          <label>Upload Thumbnail <span>*</span></label>
+
+          <input
+              type="file"
+              id="thumbnailFile"
+              class="form-control"
+              name="thumbnail"
+              accept="image/*">
+      </div>
+      <div class="form-group">
+          <label>Upload PDF / Resources</label>
+
+          <input
+              type="file"
+              id="pdfFile"
+              class="form-control"
+              name="pdf_files"
+              accept="application/pdf"
+              multiple>
+          <div class="form-hint">You can select multiple PDFs at once</div>
+      </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Total Videos</label>
+            <input type="number" class="form-control" id="totalVideos" name="total_videos" placeholder="e.g. 24" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Total Duration</label>
+            <input type="text" class="form-control" id="totalDuration" name="total_duration" placeholder="e.g. 12m 15s">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Course Color</label>
+          <div class="color-picker" id="colorPicker">
+            <div class="color-opt selected" data-color="blue" style="background: #1c5ebc;" onclick="selectColor('blue',this)"></div>
+            <div class="color-opt" data-color="green" style="background: #2e9e6e;" onclick="selectColor('green',this)"></div>
+            <div class="color-opt" data-color="orange" style="background: #d97706;" onclick="selectColor('orange',this)"></div>
+            <div class="color-opt" data-color="purple" style="background: #7c3aed;" onclick="selectColor('purple',this)"></div>
+            <div class="color-opt" data-color="red" style="background: #dc2626;" onclick="selectColor('red',this)"></div>
+            <div class="color-opt" data-color="teal" style="background: #0d9488;" onclick="selectColor('teal',this)"></div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-c outline" style="flex: none;padding: 9px 20px;" onclick="submitCourse()">
+        <span class="material-symbols-outlined" style="font-size: 14px;">save</span>
+        <span id="submitBtnText">Save Course</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="delete-modal">
+    <div class="del-icon"><span class="material-symbols-outlined">delete</span></div>
+    <h3>Delete Course?</h3>
+    <p>Are you sure you want to delete <strong id="deleteName"></strong>?
+    This will also remove enrolled student</p>
+    <div class="del-buttons">
+      <button class="del-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="del-confirm" onclick="confirmDelete()">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="material-symbols-outlined" style="font-size: 18px;" id="toastIcon">check_circle</span>
+  <span id="toastMsg">Saved!</span>
+</div>
+{% endblock %}

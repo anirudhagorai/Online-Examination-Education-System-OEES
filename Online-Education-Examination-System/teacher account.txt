@@ -1,0 +1,27 @@
+<!-- <a class="nav-item {% if active_page == 'courses' %}active{% endif %}" href="{% url 'teacher_courses' %}">
+        <span class="material-symbols-outlined">menu_book</span>Courses
+      </a>
+
+      <a class="nav-item {% if active_page == 'examinations' %}active{% endif %}" href="{% url 'teacher_examinations' %}">
+        <span class="material-symbols-outlined">assignment
+        </span>
+        Examinations
+      </a>
+
+      <a class="nav-item {% if active_page == 'students' %}active{% endif %}" href="{% url 'teacher_student' %}">
+        <span class="material-symbols-outlined">group</span>Students
+      </a>
+
+      <a class="nav-item {% if active_page == 'results' %}active{% endif %}" href="{% url 'teacher_results' %}">
+        <span class="material-symbols-outlined">bar_chart
+        </span>Results
+      </a>
+
+      <a class="nav-item {% if active_page == 'announcements' %}active{% endif %}" href="{% url 'teacher_announcements' %}">
+        <span class="material-symbols-outlined">campaign</span>Announcements
+      </a>
+
+      <a class="nav-item {% if active_page == 'profile' %}active{% endif %}" href="{% url 'teacher_profile' %}">
+        <span class="material-symbols-outlined">manage_accounts
+        </span>Profile
+      </a> -->

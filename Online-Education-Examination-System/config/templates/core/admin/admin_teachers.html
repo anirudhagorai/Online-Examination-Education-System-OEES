@@ -1,0 +1,430 @@
+{% extends 'core/admin_base.html' %}
+{% block title %}Teachers{% endblock %}
+{% block page_title %}Teacher Management{% endblock %}
+{% block breadcrumb %}Teachers{% endblock %}
+
+{% block content %}
+
+
+<!-- ══════════════════════════════════
+STAT CARDS
+════════════════════════════════════ -->
+<div class="tm-stats">
+  <div class="tm-stat">
+    <div class="tm-si blue"><span class="material-symbols-outlined">group</span></div>
+    <div>
+      <div class="tm-sv">{{ total_teachers }}</div>
+      <div class="tm-sl">Total Teachers</div>
+      <div class="tm-sd up"><span class="material-symbols-outlined">person_book</span> All registered</div>
+    </div>
+  </div>
+  <div class="tm-stat">
+    <div class="tm-si orange"><span class="material-symbols-outlined">pending_actions</span></div>
+    <div>
+      <div class="tm-sv">{{ pending_count }}</div>
+      <div class="tm-sl">Pending Approval</div>
+      <div class="tm-sd org"><span class="material-symbols-outlined">schedule</span> Needs review</div>
+    </div>
+  </div>
+  <div class="tm-stat">
+    <div class="tm-si green"><span class="material-symbols-outlined">verified_user</span></div>
+    <div>
+      <div class="tm-sv">{{ approved_count }}</div>
+      <div class="tm-sl">Approved</div>
+      <div class="tm-sd up"><span class="material-symbols-outlined">check_circle</span> Active accounts</div>
+    </div>
+  </div>
+  <div class="tm-stat">
+    <div class="tm-si red"><span class="material-symbols-outlined">person_off</span></div>
+    <div>
+      <div class="tm-sv">{{ rejected_count }}</div>
+      <div class="tm-sl">Rejected</div>
+      <div class="tm-sd red"><span class="material-symbols-outlined">cancel</span> Access denied</div>
+    </div>
+  </div>
+  <div class="tm-stat">
+    <div class="tm-si gray"><span class="material-symbols-outlined">mark_email_unread</span></div>
+    <div>
+      <div class="tm-sv">{{ unverified_count }}</div>
+      <div class="tm-sl">Email Unverified</div>
+      <div class="tm-sd"><span class="material-symbols-outlined" style="color:#9ca3af;">hourglass_empty</span> <span style="color:#9ca3af;">Awaiting OTP</span></div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ══════════════════════════════════
+     PENDING APPROVAL NOTICE
+════════════════════════════════════ -->
+{% if pending_count > 0 and tab == 'pending' %}
+<div class="tm-notice warn">
+  <span class="material-symbols-outlined mat">warning</span>
+  <div>
+    <strong>{{ pending_count }} teacher{{ pending_count|pluralize }} waiting for your approval</strong>
+    Review each profile below, then click <em>Approve</em> or <em>Reject</em>.
+    The teacher will receive an email notification immediately after.
+  </div>
+</div>
+{% endif %}
+ 
+<!-- ══════════════════════════════════
+     TAB NAV
+════════════════════════════════════ -->
+<form method="get" id="tm-filter-form">
+<input type="hidden" name="tab" id="tm-tab-input" value="{{ tab }}" />
+ 
+<div class="tm-tabs">
+  <button type="button" class="tm-tab {% if tab == 'pending' %}active{% endif %}"
+          onclick="tmSwitchTab('pending')">
+    <span class="material-symbols-outlined mat">pending_actions</span>
+    Pending Approval
+    {% if pending_count > 0 %}
+      <span class="tm-badge">{{ pending_count }}</span>
+    {% endif %}
+  </button>
+  <button type="button" class="tm-tab {% if tab == 'approved' %}active{% endif %}"
+          onclick="tmSwitchTab('approved')">
+    <span class="material-symbols-outlined mat">verified_user</span>
+    Approved
+  </button>
+  <button type="button" class="tm-tab {% if tab == 'rejected' %}active{% endif %}"
+          onclick="tmSwitchTab('rejected')">
+    <span class="material-symbols-outlined mat">person_off</span>
+    Rejected
+    {% if rejected_count > 0 %}
+      <span class="tm-badge" style="background:#d97706;">{{ rejected_count }}</span>
+    {% endif %}
+  </button>
+</div>
+ 
+<!-- ── Filters ── -->
+<div class="tm-toolbar">
+  <div class="tm-search">
+    <span class="material-symbols-outlined tm-si2">search</span>
+    <input type="text" name="q" id="tm-q"
+           value="{{ search }}"
+           placeholder="Search name, email, teacher ID…"
+           autocomplete="off" />
+  </div>
+  <select name="sort" class="tm-sel" onchange="document.getElementById('tm-filter-form').submit()">
+    <option value="-date_joined" {% if f_sort == '-date_joined' %}selected{% endif %}>Newest First</option>
+    <option value="date_joined"  {% if f_sort == 'date_joined'  %}selected{% endif %}>Oldest First</option>
+    <option value="first_name"   {% if f_sort == 'first_name'   %}selected{% endif %}>A → Z</option>
+  </select>
+  <select name="per_page" class="tm-sel" onchange="document.getElementById('tm-filter-form').submit()" style="min-width:82px;">
+    <option value="10"  {% if per_page == 10  %}selected{% endif %}>10 / pg</option>
+    <option value="25"  {% if per_page == 25  %}selected{% endif %}>25 / pg</option>
+    <option value="50"  {% if per_page == 50  %}selected{% endif %}>50 / pg</option>
+  </select>
+  <div class="tm-tb-right">
+    {% if search %}
+    <a href="{% url 'admin_teachers' %}?tab={{ tab }}" class="tm-btn-sec">
+      <span class="material-symbols-outlined">filter_alt_off</span>Clear
+    </a>
+    {% endif %}
+  </div>
+</div>
+</form>
+ 
+<!-- ══════════════════════════════════
+     TABLE
+════════════════════════════════════ -->
+<div class="tm-card">
+  <div class="tm-card-head">
+    <h3>
+      {% if tab == 'pending' %}Teachers Awaiting Approval
+      {% elif tab == 'approved' %}Approved Teachers
+      {% else %}Rejected Teachers{% endif %}
+    </h3>
+    <span class="tm-res">
+      Showing <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+      of <strong>{{ total_results }}</strong>
+    </span>
+  </div>
+ 
+  <div class="tm-tw">
+    <table class="tm-table">
+      <thead>
+        <tr>
+          <th>Teacher</th>
+          <th>Teacher ID</th>
+          <th class="hide-mob">Email Verified</th>
+          <th>Status</th>
+          <th class="hide-mob">Registered</th>
+          {% if tab == 'approved' %}<th class="hide-mob">Approved On</th>{% endif %}
+          {% if tab == 'approved' %}<th class="hide-mob">Courses</th>{% endif %}
+          <th style="text-align:center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in teachers %}
+        <tr id="tm-row-{{ t.id }}">
+ 
+          <!-- Avatar + name + email -->
+          <td>
+            <div class="tm-user-cell">
+              <div class="tm-av">
+                {{ t.first_name.0|upper|default:t.username.0|upper }}{{ t.last_name.0|upper }}
+              </div>
+              <div>
+                <div class="tm-uname">{{ t.get_full_name|default:t.username }}</div>
+                <div class="tm-uemail">{{ t.email }}</div>
+              </div>
+            </div>
+          </td>
+ 
+          <!-- Teacher ID -->
+          <td>
+            {% if t.profile.teacher_id %}
+              <span class="tm-id">
+                <span class="material-symbols-outlined">badge</span>
+                {{ t.profile.teacher_id }}
+              </span>
+            {% else %}
+              <span class="tm-id none">—</span>
+            {% endif %}
+          </td>
+ 
+          <!-- Email verified -->
+          <td class="hide-mob">
+            {% if t.profile.is_verified %}
+              <span class="tm-pill approved">
+                <span class="material-symbols-outlined">mark_email_read</span>Verified
+              </span>
+            {% else %}
+              <span class="tm-pill unver">
+                <span class="material-symbols-outlined">mark_email_unread</span>Pending
+              </span>
+            {% endif %}
+          </td>
+ 
+          <!-- Approval status -->
+          <td>
+            {% if t.profile.admin_approved %}
+              <span class="tm-pill approved" id="tm-pill-{{ t.id }}">
+                <span class="material-symbols-outlined">verified_user</span>Approved
+              </span>
+            {% elif t.profile.rejection_reason %}
+              <span class="tm-pill rejected" id="tm-pill-{{ t.id }}">
+                <span class="material-symbols-outlined">person_off</span>Rejected
+              </span>
+            {% else %}
+              <span class="tm-pill pending" id="tm-pill-{{ t.id }}">
+                <span class="material-symbols-outlined">pending</span>Pending
+              </span>
+            {% endif %}
+          </td>
+ 
+          <!-- Registered date -->
+          <td class="hide-mob">
+            <div class="tm-date">
+              {{ t.date_joined|date:"d M" }}
+              <span class="yr">{{ t.date_joined|date:"Y" }}</span>
+            </div>
+            <div class="tm-date tm">{{ t.date_joined|date:"g:i A" }}</div>
+          </td>
+ 
+          <!-- Approved on (approved tab only) -->
+          {% if tab == 'approved' %}
+          <td class="hide-mob">
+            {% if t.profile.admin_approved_at %}
+              <div class="tm-date">
+                {{ t.profile.admin_approved_at|date:"d M" }}
+                <span class="yr">{{ t.profile.admin_approved_at|date:"Y" }}</span>
+              </div>
+            {% else %}—{% endif %}
+          </td>
+          <!-- Course count -->
+          <td class="hide-mob">
+            <span style="font-size:13px;font-weight:700;color:#1a1d2e;">
+              {{ t.taught_courses.count }}
+            </span>
+            <span style="font-size:11px;color:#9ca3af;"> course{{ t.taught_courses.count|pluralize }}</span>
+          </td>
+          {% endif %}
+ 
+          <!-- Actions -->
+          <td>
+            <div class="tm-acts">
+              <!-- Quick view -->
+              <button class="tm-abtn" title="View Profile"
+                      onclick="tmOpenQV({{ t.id }})">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+ 
+              {% if tab == 'pending' %}
+              <!-- Approve -->
+              <button class="tm-abtn ap" title="Approve"
+                      onclick="tmApprove({{ t.id }}, '{{ t.get_full_name|default:t.username|escapejs }}')">
+                <span class="material-symbols-outlined">check_circle</span>
+              </button>
+              <!-- Reject -->
+              <button class="tm-abtn rj" title="Reject"
+                      onclick="tmOpenReject({{ t.id }}, '{{ t.get_full_name|default:t.username|escapejs }}')">
+                <span class="material-symbols-outlined">cancel</span>
+              </button>
+              {% endif %}
+ 
+              {% if tab == 'approved' %}
+              <!-- Revoke -->
+              <button class="tm-abtn rv" title="Revoke Access"
+                      onclick="tmRevoke({{ t.id }}, '{{ t.get_full_name|default:t.username|escapejs }}')">
+                <span class="material-symbols-outlined">lock</span>
+              </button>
+              {% endif %}
+ 
+              {% if tab == 'rejected' %}
+              <!-- Re-approve -->
+              <button class="tm-abtn ap" title="Re-Approve"
+                      onclick="tmApprove({{ t.id }}, '{{ t.get_full_name|default:t.username|escapejs }}')">
+                <span class="material-symbols-outlined">check_circle</span>
+              </button>
+              {% endif %}
+ 
+              <!-- Delete -->
+              <button class="tm-abtn del" title="Delete"
+                      onclick="tmOpenDel({{ t.id }}, '{{ t.get_full_name|default:t.username|escapejs }}')">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="tm-empty">
+              <span class="material-symbols-outlined big">person_search</span>
+              <h4>
+                {% if tab == 'pending' %}No pending teacher registrations
+                {% elif tab == 'approved' %}No approved teachers yet
+                {% else %}No rejected teachers{% endif %}
+              </h4>
+              <p>
+                {% if tab == 'pending' %}New teacher registrations needing your approval will appear here.
+                {% elif tab == 'approved' %}Approve teachers from the Pending tab.
+                {% else %}Rejected teachers will appear here.{% endif %}
+              </p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+ 
+  <!-- Pagination -->
+  {% if paginator.num_pages > 1 %}
+  <div class="tm-pag-wrap">
+    <div class="tm-pag-info">
+      Page <strong>{{ page_obj.number }}</strong>
+      of <strong>{{ paginator.num_pages }}</strong>
+      · {{ total_results }} result{{ total_results|pluralize }}
+    </div>
+    <div class="tm-pag">
+      {% if page_obj.has_previous %}
+        <a class="tm-pg" href="?tab={{ tab }}&q={{ search }}&sort={{ f_sort }}&per_page={{ per_page }}&page=1">
+          <span class="material-symbols-outlined">first_page</span></a>
+        <a class="tm-pg" href="?tab={{ tab }}&q={{ search }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}">
+          <span class="material-symbols-outlined">chevron_left</span></a>
+      {% else %}
+        <button class="tm-pg" disabled><span class="material-symbols-outlined">first_page</span></button>
+        <button class="tm-pg" disabled><span class="material-symbols-outlined">chevron_left</span></button>
+      {% endif %}
+      {% for p in page_range %}
+        {% if p is None %}<span class="tm-pg ell">…</span>
+        {% elif p == page_obj.number %}<span class="tm-pg cur">{{ p }}</span>
+        {% else %}<a class="tm-pg" href="?tab={{ tab }}&q={{ search }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ p }}">{{ p }}</a>{% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+        <a class="tm-pg" href="?tab={{ tab }}&q={{ search }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}">
+          <span class="material-symbols-outlined">chevron_right</span></a>
+        <a class="tm-pg" href="?tab={{ tab }}&q={{ search }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ paginator.num_pages }}">
+          <span class="material-symbols-outlined">last_page</span></a>
+      {% else %}
+        <button class="tm-pg" disabled><span class="material-symbols-outlined">chevron_right</span></button>
+        <button class="tm-pg" disabled><span class="material-symbols-outlined">last_page</span></button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+ 
+ 
+<!-- ══════════════════════════════════
+     QUICK-VIEW SLIDE PANEL
+════════════════════════════════════ -->
+<div class="tm-qv-overlay" id="tm-qv-overlay" onclick="tmCloseQV()"></div>
+<div class="tm-qv-panel" id="tm-qv-panel">
+  <div class="tm-qv-head">
+    <h3>Teacher Profile</h3>
+    <button class="tm-qv-close" onclick="tmCloseQV()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+  <div class="tm-qv-body" id="tm-qv-body"></div>
+  <div class="tm-qv-foot" id="tm-qv-foot" style="display:none;"></div>
+</div>
+ 
+ 
+<!-- ══════════════════════════════════
+     REJECT MODAL
+════════════════════════════════════ -->
+<div class="tm-modal-bg" id="tm-reject-modal">
+  <div class="tm-modal">
+    <div class="tm-mhead">
+      <h3>Reject Teacher Account</h3>
+      <button class="tm-mclose" onclick="tmCloseReject()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="tm-mbody">
+      <input type="hidden" id="tm-reject-id" />
+      <div class="tm-notice warn" style="margin-bottom:16px;">
+        <span class="material-symbols-outlined mat">info</span>
+        <div>
+          <strong>Rejecting: <span id="tm-reject-name"></span></strong>
+          The teacher will receive an email explaining the rejection.
+        </div>
+      </div>
+      <div class="tm-fg">
+        <label>Reason for Rejection <span style="color:#dc2626">*</span></label>
+        <textarea class="tm-fc" id="tm-reject-reason" rows="4"
+          placeholder="e.g. Invalid teacher ID, incomplete information, unrecognised institution…"></textarea>
+      </div>
+    </div>
+    <div class="tm-mfoot">
+      <button class="tm-cancel-btn" onclick="tmCloseReject()">Cancel</button>
+      <button class="tm-submit-btn red" id="tm-reject-btn" onclick="tmExecReject()">
+        <span class="material-symbols-outlined">cancel</span>
+        <span id="tm-reject-txt">Reject & Notify</span>
+      </button>
+    </div>
+  </div>
+</div>
+ 
+ 
+<!-- ══════════════════════════════════
+     DELETE MODAL
+════════════════════════════════════ -->
+<div class="tm-modal-bg" id="tm-del-modal">
+  <div class="tm-modal sm">
+    <div class="tm-mbody" style="padding:28px 28px 24px;text-align:center;">
+      <div style="width:58px;height:58px;border-radius:50%;background:#fee2e2;margin:0 auto 14px;
+                  display:flex;align-items:center;justify-content:center;">
+        <span class="material-symbols-outlined" style="font-size:26px;color:#dc2626;">delete</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:700;color:#1a1d2e;margin-bottom:8px;">Delete Teacher?</h3>
+      <p style="font-size:13px;color:#6b7280;line-height:1.6;">
+        Permanently delete <strong id="tm-del-name"></strong>?
+        All their courses and data will be removed. This cannot be undone.
+      </p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;">
+        <button class="tm-cancel-btn" onclick="tmCloseDel()">Cancel</button>
+        <button class="tm-submit-btn red" id="tm-del-btn" onclick="tmExecDelete()">
+          <span id="tm-del-txt">Yes, Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

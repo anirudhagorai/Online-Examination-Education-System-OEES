@@ -1,0 +1,93 @@
+{% extends 'core/teacher_base.html' %}
+{% load static %}
+{% block title %}Students{% endblock %}
+{% block page_title %}Students{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="page-header">
+  <div>
+    <h2>My Students</h2>
+    <p>Students enrolled in your courses</p>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon blue"><span class="material-symbols-outlined">group</span></div>
+    <div><div class="stat-val">{{ total_students }}</div><div class="stat-lbl">Total Students</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><span class="material-symbols-outlined">menu_book</span></div>
+    <div><div class="stat-val">{{ total_courses }}</div><div class="stat-lbl">Total Courses</div></div>
+  </div>
+</div>
+
+<!-- Search -->
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="s-icon material-symbols-outlined">search</span>
+    <input class="search-input" id="studentSearch" type="text" placeholder="Search students..." oninput="filterStudents()">
+  </div>
+</div>
+
+{% if student_data %}
+<div class="students-grid" id="studentsGrid">
+  {% for s in student_data %}
+  <div class="student-card" data-name="{{ s.user.first_name|lower }} {{ s.user.username|lower }}">
+
+    <!-- Avatar + Name -->
+    <div class="student-card-header">
+      <div class="student-avatar-wrap">
+        {% if s.profile.avatar %}
+          <img src="{{ s.profile.avatar.url }}" alt="{{ s.user.first_name }}" class="student-avatar-img">
+        {% else %}
+          <div class="student-avatar-initials">
+            {% if s.user.first_name %}{{ s.user.first_name|slice:":1"|upper }}{% else %}{{ s.user.username|slice:":1"|upper }}{% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="student-info">
+        <div class="student-name">{{ s.user.get_full_name|default:s.user.username }}</div>
+        <div class="student-email">{{ s.email }}</div>
+        {% if s.profile.roll_number %}
+        <div class="student-roll">
+          <span class="material-symbols-outlined">tag</span>{{ s.profile.roll_number }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Enrolled Courses & Progress -->
+    <div class="student-courses">
+      <div class="student-courses-label">Enrolled Courses</div>
+      {% for course in s.courses %}
+      <div class="student-course-row">
+        <div class="student-course-name">{{ course.name }}</div>
+        <div class="student-course-progress">
+          <div class="prog-label">
+            <span>Progress</span>
+            <span>{{ course.progress }}%</span>
+          </div>
+          <div class="prog-track">
+            <div class="prog-fill blue" style="width: {{ course.progress }}%"></div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+  <span class="material-symbols-outlined">group_off</span>
+  <p>No students enrolled in your courses yet.</p>
+</div>
+{% endif %}
+
+{% endblock %}

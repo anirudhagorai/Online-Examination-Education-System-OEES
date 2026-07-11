@@ -1,0 +1,123 @@
+{% extends 'core/student_base.html' %}
+{% block title %}Student Dashboard{% endblock %}
+{% block page_title %}Student Dashboard{% endblock %}
+{% block content %}
+   
+  <!-- ====CONTENT==== ->
+
+  <!-- Welcome-bar -->
+  <div class="welcome-bar">
+    <div>
+      <h2>Welcome back, {{ request.user.get_full_name }}</h2>
+      <p>Student ID: {{ request.user.username }} </p>
+    </div>
+    <a href="{% url 'student_results' %}" class="btn-primary">View Results</a>
+  </div>
+
+  <!-- Top Cards Row -->
+  <div class="top-row">
+
+    <!-- My Progress -->
+    <div class="card">
+      <div class="card-title">My Progress</div>
+      <div class="progress-card">
+        <div class="donut-wrap">
+          <svg width="90" height="90" viewBox="0 0 90 90">
+            <circle cx="45" cy="45" r="36" fill="none" stroke="#e8edf5" stroke-width="9"/>
+            <circle cx="45" cy="45" r="36" fill="none" stroke="#1c5ebc" stroke-width="9" stroke-dasharray="226.2" stroke-dashoffset="72.4" stroke-linecap="round" transform="rotate(-90 45 45)"/>
+          </svg>
+          <div class="donut-label">68%</div>
+        </div>
+        <div class="progress-stats">
+          <div class="pct"><span>68%</span>Complete</div>
+          <div class="done">
+            <strong>3/5</strong>
+            Courses Done</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upcoming Exams -->
+    <div class="card">
+      <div class="card-title">Upcoming Exams</div>
+      <div class="exam-list">
+        {% for exam in upcoming_exams %}
+          <div class="exam-item">
+            <div class="exam-info">
+              <div class="exam-title">1. Mathematics II</div>
+              <div class="exam-date">Apr 20, 10:00 AM</div>
+            </div>
+            <a href="{% url 'student_examinations' %}" class="btn-join">Join Exam</a>
+          </div>
+        {% empty %}
+          <p class="empty-state-sm">No upcoming exams</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Ongoing Exams -->
+    <div class="card">
+      <div class="card-title">Ongoing Exams</div>
+      {% if ongoing_exams %}
+        {% for exam in ongoing_exams %}
+          <div class="exam-item">
+            <div class="exam-title">{{ exam.title }}</div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="empty-state">No exams currently active.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ====Bottom Row==== -->
+  <div class="bottom-row">
+
+    <!-- Current-Courses -->
+    <div class="card">
+      <div class="courses-header">
+        <div class="card-title" style="margin: 0;">Current Courses</div>
+        <a href="{% url 'student_courses' %}" class="btn-outline">View All</a>
+      </div>
+      <div class="courses-grid">
+        {% for course in current_courses %}
+          <div class="course-card">
+            <div class="course-header">
+              <span class="course-title">Introduction to AI</span>
+              <span class="badge-active">Active</span>
+            </div>
+            <div class="course-progress-label">
+              <span>Progress Bar</span><span>75%</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width: 75%;"></div>
+            </div>
+              <a href="{% url 'student_results' %}" class="btn-results">View Results</a>
+          </div>
+        {% empty %}
+          <p class="empty-state-sm">No courses enrolled.</p>
+        {% endfor %}   
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="card">
+      <div class="notif-header">
+        <div class="card-title" style="margin: 0;display: flex;align-items: center; gap: 8px;"></div>
+        <span class="material-symbols-outlined">notifications</span>Notifications
+        <span class="notif-count">3 Alerts</span>
+      </div>
+      <div class="notif-list">
+        {% for notif in notifications %}
+          <div class="notif-item">
+            <div class="notif-main">New Assignment in AI</div>
+            <div class="notif-sub">..</div>
+          </div>
+        {% endfor %}    
+      </div>
+      <a class="see-all" href="{% url 'student_announcements' %}">See all notifications<span class="material-symbols-outlined">arrow_forward</span> </a>
+    </div>
+  </div>
+{% endblock %}
+
+   

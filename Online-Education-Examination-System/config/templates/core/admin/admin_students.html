@@ -1,0 +1,509 @@
+{% extends 'core/admin_base.html' %}
+{% block title %}Students{% endblock %}
+{% block page_title %}Student Management{% endblock %}
+{% block breadcrumb %}Students{% endblock %}
+
+{% block content %}
+
+<!-- ══════════════════════════════════
+     STAT CARDS
+════════════════════════════════════ -->
+<div class="sm-stats">
+  <div class="sm-stat">
+    <div class="sm-si blue"><span class="material-symbols-outlined">school</span></div>
+    <div><div class="sm-sv">{{ total_students }}</div><div class="sm-sl">Total Students</div></div>
+  </div>
+  <div class="sm-stat">
+    <div class="sm-si green"><span class="material-symbols-outlined">check_circle</span></div>
+    <div><div class="sm-sv">{{ active_students }}</div><div class="sm-sl">Active</div></div>
+  </div>
+  <div class="sm-stat">
+    <div class="sm-si orange"><span class="material-symbols-outlined">warning</span></div>
+    <div><div class="sm-sv">{{ suspended_students }}</div><div class="sm-sl">Suspended</div></div>
+  </div>
+  <div class="sm-stat">
+    <div class="sm-si teal"><span class="material-symbols-outlined">verified</span></div>
+    <div><div class="sm-sv">{{ verified_students }}</div><div class="sm-sl">Verified</div></div>
+  </div>
+  <div class="sm-stat">
+    <div class="sm-si purple"><span class="material-symbols-outlined">library_books</span></div>
+    <div><div class="sm-sv">{{ enrolled_students }}</div><div class="sm-sl">Enrolled</div></div>
+  </div>
+  <div class="sm-stat">
+    <div class="sm-si green" style="background:#f0fdf6;color:#2e9e6e;"><span class="material-symbols-outlined">person_add</span></div>
+    <div><div class="sm-sv">{{ new_this_week }}</div><div class="sm-sl">New This Week</div></div>
+  </div>
+</div>
+
+<button onclick="toggleStudentLogin()" id="student-login-btn" class="sm-btn-sec" 
+        style="padding:12px 24px; font-size:15px; display:flex; align-items:center; gap:8px;">
+    <span class="material-symbols-outlined">login</span>
+    <span id="student-login-text">Student Login: Active</span>
+</button>
+
+
+<!-- ══════════════════════════════════
+     TABS
+════════════════════════════════════ -->
+<form method="get" id="sm-form">
+<input type="hidden" name="tab" id="sm-tab-input" value="{{ tab }}" />
+
+<div class="sm-tabs">
+  <button type="button" class="sm-tab {% if tab == 'all' %}active{% endif %}"
+          onclick="smTab('all')">
+    <span class="material-symbols-outlined mi">group</span>
+    All Students
+  </button>
+  <button type="button" class="sm-tab {% if tab == 'recent' %}active{% endif %}"
+          onclick="smTab('recent')">
+    <span class="material-symbols-outlined mi">person_add</span>
+    New This Week
+    {% if new_this_week > 0 %}
+      <span class="sm-tbadge" style="background:#2e9e6e;">{{ new_this_week }}</span>
+    {% endif %}
+  </button>
+  <button type="button" class="sm-tab {% if tab == 'suspended' %}active{% endif %} orange-tab"
+          onclick="smTab('suspended')">
+    <span class="material-symbols-outlined mi">warning</span>
+    Suspended
+    {% if suspended_students > 0 %}
+      <span class="sm-tbadge">{{ suspended_students }}</span>
+    {% endif %}
+  </button>
+</div>
+
+
+
+
+<!-- ── Filters toolbar ── -->
+<div class="sm-toolbar">
+  <div class="sm-search">
+    <span class="material-symbols-outlined sm-si3">search</span>
+    <input type="text" name="q" id="sm-q"
+           value="{{ search }}"
+           placeholder="Search name, roll no, email…" autocomplete="off" />
+  </div>
+
+  <select name="status" class="sm-sel" onchange="document.getElementById('sm-form').submit()">
+    <option value="all"       {% if f_status == 'all'       %}selected{% endif %}>All Status</option>
+    <option value="active"    {% if f_status == 'active'    %}selected{% endif %}>Active</option>
+    <option value="inactive"  {% if f_status == 'inactive'  %}selected{% endif %}>Inactive</option>
+    <option value="suspended" {% if f_status == 'suspended' %}selected{% endif %}>Suspended</option>
+  </select>
+
+  <select name="course" class="sm-sel" onchange="document.getElementById('sm-form').submit()">
+    <option value="all">All Courses</option>
+    {% for course in all_courses %}
+      <option value="{{ course.id }}" {% if f_course == course.id|stringformat:'s' %}selected{% endif %}>
+        {{ course.name }}
+      </option>
+    {% endfor %}
+  </select>
+
+  <select name="sort" class="sm-sel" onchange="document.getElementById('sm-form').submit()">
+    <option value="-date_joined" {% if f_sort == '-date_joined' %}selected{% endif %}>Newest First</option>
+    <option value="date_joined"  {% if f_sort == 'date_joined'  %}selected{% endif %}>Oldest First</option>
+    <option value="first_name"   {% if f_sort == 'first_name'   %}selected{% endif %}>A → Z</option>
+  </select>
+
+  <select name="per_page" class="sm-sel" onchange="document.getElementById('sm-form').submit()" style="min-width:82px;">
+    <option value="15" {% if per_page == 15 %}selected{% endif %}>15 / pg</option>
+    <option value="25" {% if per_page == 25 %}selected{% endif %}>25 / pg</option>
+    <option value="50" {% if per_page == 50 %}selected{% endif %}>50 / pg</option>
+  </select>
+
+  <div class="sm-tb-right">
+    {% if search or f_status != 'all' or f_course != 'all' %}
+    <a href="{% url 'admin_students' %}?tab={{ tab }}" class="sm-btn-sec">
+      <span class="material-symbols-outlined">filter_alt_off</span>Clear
+    </a>
+    {% endif %}
+    <a href="{% url 'admin_export_students' %}" class="sm-btn-sec" title="Export CSV">
+      <span class="material-symbols-outlined">download</span>Export
+    </a>
+  </div>
+</div>
+</form>
+
+<!-- Bulk bar -->
+<div class="sm-bulk" id="sm-bulk">
+  <span class="material-symbols-outlined">checklist</span>
+  <strong id="sm-bulk-count">0</strong>&nbsp;selected
+  <div class="sm-bulk-acts">
+    <button class="sm-btn-danger" onclick="smBulkSuspend()">
+      <span class="material-symbols-outlined" style="font-size:15px;">warning</span>Suspend
+    </button>
+    <button class="sm-btn-danger" onclick="smBulkDelete()">
+      <span class="material-symbols-outlined" style="font-size:15px;">delete</span>Delete
+    </button>
+    <button class="sm-btn-ghost" onclick="smClearSel()">Clear</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     TABLE
+════════════════════════════════════ -->
+<div class="sm-card">
+  <div class="sm-card-head">
+    <h3>
+      {% if tab == 'all' %}All Students
+      {% elif tab == 'recent' %}New Registrations (Last 7 Days)
+      {% else %}Suspended Students{% endif %}
+    </h3>
+    <span class="sm-res">
+      Showing <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+      of <strong>{{ total_results }}</strong> student{{ total_results|pluralize }}
+    </span>
+  </div>
+
+  <div class="sm-tw">
+    <table class="sm-table">
+      <thead>
+        <tr>
+          <th class="sm-cbcol">
+            <input type="checkbox" class="sm-cb" id="sm-sel-all" title="Select all" />
+          </th>
+          <th>Student</th>
+          <th>Roll No</th>
+          <th class="hide-mob">Status</th>
+          <th class="hide-mob">Verified</th>
+          <th class="hide-mob">Courses</th>
+          <th>Joined</th>
+          <th style="text-align:center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="sm-tbody">
+        {% for s in students %}
+        {% with is_sus=s.profile.is_suspended %}
+        <tr id="sm-row-{{ s.id }}"
+            class="{% if is_sus %}suspended-row{% endif %}"
+            data-uid="{{ s.id }}">
+
+          <!-- Checkbox -->
+          <td class="sm-cbcol">
+            <input type="checkbox" class="sm-cb sm-rcb" value="{{ s.id }}"
+                   onchange="smUpdateBulk()" />
+          </td>
+
+          <!-- Avatar + name -->
+          <td>
+            <div class="sm-uc">
+              <div class="sm-av {% if is_sus %}suspended-av{% elif not s.is_active %}inactive-av{% endif %}">
+                {{ s.first_name.0|upper|default:s.username.0|upper }}{{ s.last_name.0|upper }}
+                {% if is_sus or not s.is_active %}
+                <div class="lock-badge">
+                  <span class="material-symbols-outlined">lock</span>
+                </div>
+                {% endif %}
+              </div>
+              <div>
+                <div class="sm-uname">
+                  {{ s.get_full_name|default:s.username }}
+                  {% if s.date_joined >= week_ago_dt|default:s.date_joined %}
+                    <span class="sm-new-badge">NEW</span>
+                  {% endif %}
+                </div>
+                <div class="sm-uemail">{{ s.email }}</div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Roll number -->
+          <td>
+            {% if s.profile.roll_number %}
+              <span class="sm-roll">
+                <span class="material-symbols-outlined">badge</span>
+                {{ s.profile.roll_number }}
+              </span>
+            {% else %}
+              <span class="sm-roll none">—</span>
+            {% endif %}
+          </td>
+
+          <!-- Status -->
+          <td class="hide-mob">
+            {% if is_sus %}
+              <span class="sm-pill suspended" id="sm-status-{{ s.id }}">
+                <span class="material-symbols-outlined">warning</span>Suspended
+              </span>
+            {% elif s.is_active %}
+              <span class="sm-pill active" id="sm-status-{{ s.id }}">
+                <span class="material-symbols-outlined">check_circle</span>Active
+              </span>
+            {% else %}
+              <span class="sm-pill locked" id="sm-status-{{ s.id }}">
+                <span class="material-symbols-outlined">lock</span>Locked
+              </span>
+            {% endif %}
+          </td>
+
+          <!-- Verified -->
+          <td class="hide-mob">
+            {% if s.profile.is_verified %}
+              <span class="sm-pill verified">
+                <span class="material-symbols-outlined">verified</span>Yes
+              </span>
+            {% else %}
+              <span class="sm-pill unverified">
+                <span class="material-symbols-outlined">pending</span>No
+              </span>
+            {% endif %}
+          </td>
+
+          <!-- Enrolled courses count -->
+          <td class="hide-mob">
+            {% with cnt=s.enrolled_courses.count %}
+            {% if cnt > 0 %}
+              <span class="sm-course-chip">
+                <span class="material-symbols-outlined">menu_book</span>
+                {{ cnt }} course{{ cnt|pluralize }}
+              </span>
+            {% else %}
+              <span style="font-size:12px;color:#9ca3af;">None</span>
+            {% endif %}
+            {% endwith %}
+          </td>
+
+          <!-- Joined -->
+          <td>
+            <div class="sm-date">
+              {{ s.date_joined|date:"d M" }}
+              <span class="yr">{{ s.date_joined|date:"Y" }}</span>
+            </div>
+            <div class="sm-date tm">{{ s.date_joined|date:"g:i A" }}</div>
+          </td>
+
+          <!-- Actions -->
+          <td>
+            <div class="sm-acts">
+              <!-- View -->
+              <button class="sm-abtn" title="View Profile" onclick="smOpenQV({{ s.id }})">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+              <!-- Edit -->
+              <button class="sm-abtn" title="Edit" onclick="smOpenEdit({{ s.id }},
+                '{{ s.first_name|escapejs }}','{{ s.last_name|escapejs }}',
+                '{{ s.email|escapejs }}','{{ s.profile.roll_number|default:''|escapejs }}',
+                '{{ s.profile.dob|date:'Y-m-d'|default:'' }}',
+                {{ s.is_active|yesno:'true,false' }})">
+                <span class="material-symbols-outlined">edit</span>
+              </button>
+              <!-- Toggle lock (not suspend) -->
+              <button class="sm-abtn tog" id="sm-tog-{{ s.id }}"
+                      title="{{ s.is_active|yesno:'Lock,Unlock' }}"
+                      onclick="smToggle({{ s.id }}, this)">
+                <span class="material-symbols-outlined">
+                  {{ s.is_active|yesno:'lock,lock_open' }}
+                </span>
+              </button>
+              <!-- Suspend / Unsuspend -->
+              {% if is_sus %}
+              <button class="sm-abtn uns" title="Unsuspend" onclick="smUnsuspend({{ s.id }})">
+                <span class="material-symbols-outlined">lock_open</span>
+              </button>
+              {% else %}
+              <button class="sm-abtn sus" title="Suspend" onclick="smOpenSuspend({{ s.id }}, '{{ s.get_full_name|default:s.username|escapejs }}')">
+                <span class="material-symbols-outlined">warning</span>
+              </button>
+              {% endif %}
+              <!-- Delete -->
+              <button class="sm-abtn del" title="Delete"
+                      onclick="smOpenDel({{ s.id }}, '{{ s.get_full_name|default:s.username|escapejs }}')">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endwith %}
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="sm-empty">
+              <span class="material-symbols-outlined big">school</span>
+              <h4>No students found</h4>
+              <p>Try adjusting your search or filter settings.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if paginator.num_pages > 1 %}
+  <div class="sm-pag-wrap">
+    <div class="sm-pag-info">
+      Page <strong>{{ page_obj.number }}</strong> of <strong>{{ paginator.num_pages }}</strong>
+      · {{ total_results }} result{{ total_results|pluralize }}
+    </div>
+    <div class="sm-pag">
+      {% if page_obj.has_previous %}
+        <a class="sm-pg" href="?tab={{ tab }}&q={{ search }}&status={{ f_status }}&course={{ f_course }}&sort={{ f_sort }}&per_page={{ per_page }}&page=1"><span class="material-symbols-outlined">first_page</span></a>
+        <a class="sm-pg" href="?tab={{ tab }}&q={{ search }}&status={{ f_status }}&course={{ f_course }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}"><span class="material-symbols-outlined">chevron_left</span></a>
+      {% else %}
+        <button class="sm-pg" disabled><span class="material-symbols-outlined">first_page</span></button>
+        <button class="sm-pg" disabled><span class="material-symbols-outlined">chevron_left</span></button>
+      {% endif %}
+      {% for p in page_range %}
+        {% if p is None %}<span class="sm-pg ell">…</span>
+        {% elif p == page_obj.number %}<span class="sm-pg cur">{{ p }}</span>
+        {% else %}<a class="sm-pg" href="?tab={{ tab }}&q={{ search }}&status={{ f_status }}&course={{ f_course }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ p }}">{{ p }}</a>{% endif %}
+      {% endfor %}
+      {% if page_obj.has_next %}
+        <a class="sm-pg" href="?tab={{ tab }}&q={{ search }}&status={{ f_status }}&course={{ f_course }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}"><span class="material-symbols-outlined">chevron_right</span></a>
+        <a class="sm-pg" href="?tab={{ tab }}&q={{ search }}&status={{ f_status }}&course={{ f_course }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ paginator.num_pages }}"><span class="material-symbols-outlined">last_page</span></a>
+      {% else %}
+        <button class="sm-pg" disabled><span class="material-symbols-outlined">chevron_right</span></button>
+        <button class="sm-pg" disabled><span class="material-symbols-outlined">last_page</span></button>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+
+<!-- ══════════════════════════════════
+     QUICK-VIEW SLIDE PANEL
+════════════════════════════════════ -->
+<div class="sm-qv-overlay" id="sm-qv-overlay" onclick="smCloseQV()"></div>
+<div class="sm-qv-panel" id="sm-qv-panel">
+  <div class="sm-qv-head">
+    <h3>Student Profile</h3>
+    <button class="sm-qv-close" onclick="smCloseQV()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+  <div class="sm-qv-body" id="sm-qv-body"></div>
+  <div class="sm-qv-foot" id="sm-qv-foot" style="display:none;"></div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     EDIT MODAL
+════════════════════════════════════ -->
+<div class="sm-modal-bg" id="sm-edit-modal">
+  <div class="sm-modal med">
+    <div class="sm-mhead">
+      <h3>Edit Student</h3>
+      <button class="sm-mclose" onclick="smCloseEdit()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="sm-mbody">
+      <input type="hidden" id="sm-edit-id" />
+      <div class="sm-frow">
+        <div class="sm-fg">
+          <label>First Name <em>*</em></label>
+          <input class="sm-fc" type="text" id="sm-edit-fn" placeholder="First name" />
+        </div>
+        <div class="sm-fg">
+          <label>Last Name</label>
+          <input class="sm-fc" type="text" id="sm-edit-ln" placeholder="Last name" />
+        </div>
+      </div>
+      <div class="sm-fg">
+        <label>Email <em>*</em></label>
+        <input class="sm-fc" type="email" id="sm-edit-em" placeholder="email@example.com" />
+      </div>
+      <div class="sm-frow">
+        <div class="sm-fg">
+          <label>Roll Number</label>
+          <input class="sm-fc" type="text" id="sm-edit-roll" placeholder="e.g. 11900122120" />
+        </div>
+        <div class="sm-fg">
+          <label>Date of Birth</label>
+          <input class="sm-fc" type="date" id="sm-edit-dob" />
+        </div>
+      </div>
+      <div class="sm-fg">
+        <label>Account Status</label>
+        <select class="sm-fc" id="sm-edit-active">
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+      </div>
+    </div>
+    <div class="sm-mfoot">
+      <button class="sm-cancel-btn" onclick="smCloseEdit()">Cancel</button>
+      <button class="sm-submit-btn" id="sm-edit-btn" onclick="smSaveEdit()">
+        <span class="material-symbols-outlined">save</span>
+        <span id="sm-edit-txt">Save Changes</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     SUSPEND MODAL
+════════════════════════════════════ -->
+<div class="sm-modal-bg" id="sm-sus-modal">
+  <div class="sm-modal med">
+    <div class="sm-mhead">
+      <h3>Suspend Student Account</h3>
+      <button class="sm-mclose" onclick="smCloseSuspend()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="sm-mbody">
+      <input type="hidden" id="sm-sus-id" />
+      <div style="display:flex;align-items:flex-start;gap:12px;
+                  background:#fff7ed;border:1px solid #fcd34d;border-radius:10px;
+                  padding:14px;margin-bottom:18px;">
+        <span class="material-symbols-outlined" style="color:#d97706;font-size:20px;flex-shrink:0;">warning</span>
+        <div>
+          <strong style="font-size:13px;color:#92400e;display:block;margin-bottom:3px;">
+            Suspending: <span id="sm-sus-name"></span>
+          </strong>
+          <span style="font-size:12px;color:#a16207;">
+            The student will be logged out immediately and cannot log in until you lift the suspension.
+            An email notification will be sent to the student.
+          </span>
+        </div>
+      </div>
+      <div class="sm-fg">
+        <label>Reason for Suspension <em>*</em></label>
+        <textarea class="sm-fc" id="sm-sus-reason" rows="3"
+          placeholder="e.g. Suspicious activity, Academic misconduct, Violation of platform policy…"></textarea>
+      </div>
+    </div>
+    <div class="sm-mfoot">
+      <button class="sm-cancel-btn" onclick="smCloseSuspend()">Cancel</button>
+      <button class="sm-submit-btn orange" id="sm-sus-btn" onclick="smExecSuspend()">
+        <span class="material-symbols-outlined">warning</span>
+        <span id="sm-sus-txt">Suspend Account</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════
+     DELETE MODAL
+════════════════════════════════════ -->
+<div class="sm-modal-bg" id="sm-del-modal">
+  <div class="sm-modal sm">
+    <div class="sm-mbody" style="padding:28px 28px 24px;text-align:center;">
+      <div style="width:56px;height:56px;border-radius:50%;background:#fee2e2;
+                  margin:0 auto 14px;display:flex;align-items:center;justify-content:center;">
+        <span class="material-symbols-outlined" style="font-size:26px;color:#dc2626;">delete</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:700;color:#1a1d2e;margin-bottom:8px;">Delete Student?</h3>
+      <p style="font-size:13px;color:#6b7280;line-height:1.6;">
+        Permanently delete <strong id="sm-del-name"></strong>?
+        All their enrollments, progress and data will be removed. Cannot be undone.
+      </p>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;">
+        <button class="sm-cancel-btn" onclick="smCloseDel()">Cancel</button>
+        <button class="sm-submit-btn red" id="sm-del-btn" onclick="smExecDelete()">
+          <span id="sm-del-txt">Yes, Delete</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}

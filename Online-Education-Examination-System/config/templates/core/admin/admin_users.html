@@ -1,0 +1,491 @@
+{% extends 'core/admin_base.html' %}
+{% block title %}Admin Users{% endblock %}
+{% block page_title %}Registered Users{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js"></script>
+<script>
+  window.AdminUrls = {
+    detail: "/eduexam-admin/user/0/detail/",
+    toggle: "/eduexam-admin/user/0/toggle/",
+    edit: "/eduexam-admin/user/0/edit/",
+    delete: "/eduexam-admin/user/0/delete/"
+  };
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+STAT CARDS
+══════════════════════════════════════════════════════════════ -->
+<div class="pu-stats">
+
+  <div class="pu-stat">
+    <div class="pu-sicon blue">
+      <span class="material-symbols-outlined">group</span>
+    </div>
+    <div>
+      <div class="pu-sval">{{ total_all }}</div>
+      <div class="pu-slbl">Total Users</div>
+      <div class="pu-sdelta up">
+        <span class="material-symbols-outlined">trending_up</span>
+        +{{ new_this_week }} this week
+      </div>
+    </div>
+  </div>
+
+  <div class="pu-stat">
+    <div class="pu-sicon green">
+      <span class="material-symbols-outlined">school</span>
+    </div>
+    <div>
+      <div class="pu-sval">{{ total_teachers }}</div>
+      <div class="pu-slbl">Teachers</div>
+    </div>
+  </div>
+
+  <div class="pu-stat">
+    <div class="pu-sicon blue">
+      <span class="material-symbols-outlined">person_book</span>
+    </div>
+    <div>
+      <div class="pu-sval">{{ total_students }}</div>
+      <div class="pu-slbl">Students</div>
+    </div>
+  </div>
+
+  <div class="pu-stat">
+    <div class="pu-sicon orange">
+      <span class="material-symbols-outlined">verified</span>
+    </div>
+    <div>
+      <div class="pu-sval">{{ total_verified }}</div>
+      <div class="pu-slbl">Verified</div>
+    </div>
+  </div>
+
+  <div class="pu-stat">
+    <div class="pu-sicon red">
+      <span class="material-symbols-outlined">block</span>
+    </div>
+    <div>
+      <div class="pu-sval">{{ total_inactive }}</div>
+      <div class="pu-slbl">Inactive</div>
+      <div class="pu-sdelta down">
+        <span class="material-symbols-outlined">person_off</span>
+        needs review
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     FILTERS TOOLBAR
+══════════════════════════════════════════════════════════════ -->
+<form method="get" id="pu-filter-form">
+<div class="pu-toolbar">
+
+  <div class="pu-search">
+    <span class="material-symbols-outlined pu-search-icon">search</span>
+    <input type="text" name="q" id="pu-q"
+           value="{{ search }}"
+           placeholder="Search name, email, ID…"
+           autocomplete="off" />
+  </div>
+
+  <select name="role" class="pu-sel" onchange="puSubmit()">
+    <option value="all"     {% if f_role == 'all'     %}selected{% endif %}>All Roles</option>
+    <option value="student" {% if f_role == 'student' %}selected{% endif %}>Students</option>
+    <option value="teacher" {% if f_role == 'teacher' %}selected{% endif %}>Teachers</option>
+
+  </select>
+
+  <select name="status" class="pu-sel" onchange="puSubmit()">
+    <option value="all"      {% if f_status == 'all'      %}selected{% endif %}>All Status</option>
+    <option value="active"   {% if f_status == 'active'   %}selected{% endif %}>Active</option>
+    <option value="inactive" {% if f_status == 'inactive' %}selected{% endif %}>Inactive</option>
+  </select>
+
+  <select name="verified" class="pu-sel" onchange="puSubmit()">
+    <option value="all" {% if f_verified == 'all' %}selected{% endif %}>All Verified</option>
+    <option value="yes" {% if f_verified == 'yes' %}selected{% endif %}>Verified</option>
+    <option value="no"  {% if f_verified == 'no'  %}selected{% endif %}>Unverified</option>
+  </select>
+
+  <select name="sort" class="pu-sel" onchange="puSubmit()">
+    <option value="-date_joined" {% if f_sort == '-date_joined' %}selected{% endif %}>Newest First</option>
+    <option value="date_joined"  {% if f_sort == 'date_joined'  %}selected{% endif %}>Oldest First</option>
+    <option value="first_name"   {% if f_sort == 'first_name'   %}selected{% endif %}>A → Z</option>
+  </select>
+
+  <select name="per_page" class="pu-sel" onchange="puSubmit()" style="min-width:82px;">
+    <option value="10"  {% if per_page == 10  %}selected{% endif %}>10 / pg</option>
+    <option value="25"  {% if per_page == 25  %}selected{% endif %}>25 / pg</option>
+    <option value="50"  {% if per_page == 50  %}selected{% endif %}>50 / pg</option>
+  </select>
+
+  <div class="pu-tb-right">
+    {% if search or f_role != 'all' or f_status != 'all' or f_verified != 'all' %}
+    <a href="{% url 'admin_users' %}" class="pu-btn-sec">
+      <span class="material-symbols-outlined">filter_alt_off</span>Clear
+    </a>
+    {% endif %}
+    <a href="{% url 'admin_users_export' %}" class="pu-btn-sec">
+      <span class="material-symbols-outlined">download</span>Export
+    </a>
+  </div>
+</div>
+</form>
+
+<!-- Bulk action bar -->
+<div class="pu-bulk" id="pu-bulk">
+  <span class="material-symbols-outlined">checklist</span>
+  <strong id="pu-bulk-count">0</strong>&nbsp;user(s) selected
+  <div class="pu-bulk-actions">
+    <button class="pu-btn-danger" onclick="puBulkDelete()">
+      <span class="material-symbols-outlined">delete_sweep</span>Delete
+    </button>
+    <button class="pu-btn-ghost" onclick="puClearSel()">Clear</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     USER TABLE
+══════════════════════════════════════════════════════════════ -->
+<div class="pu-card">
+
+  <div class="pu-card-head">
+    <h3>All Users</h3>
+    <span class="pu-result-txt">
+      Showing <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+      of <strong>{{ total_results }}</strong> user{{ total_results|pluralize }}
+    </span>
+  </div>
+
+  <div class="pu-table-wrap">
+    <table class="pu-table" id="pu-table">
+      <thead>
+        <tr>
+          <th class="pu-cb-col">
+            <input type="checkbox" class="pu-cb" id="pu-sel-all" title="Select all" />
+          </th>
+          <th>User</th>
+          <th>Role</th>
+          <th>ID / Roll No</th>
+          <th class="hide-mob">Status</th>
+          <th class="hide-mob">Verified</th>
+          <th>Joined</th>
+          <th style="text-align:center;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="pu-tbody">
+
+        {% for u in users %}
+          {% if not u.is_superuser %}
+
+            <tr id="pu-row-{{ u.id }}" data-uid="{{ u.id }}">
+
+              <!-- Checkbox -->
+              <td class="pu-cb-col">
+                <input type="checkbox" class="pu-cb pu-row-cb" value="{{ u.id }}"
+                   onchange="puUpdateBulk()" />
+              </td>
+
+              <!-- Avatar + name + email -->
+              <td>
+                <div class="pu-user-cell">
+                  <div class="pu-av {{ u.profile.role|default:'none' }}">
+                    {{ u.first_name.0|upper|default:u.username.0|upper }}{{ u.last_name.0|upper }}
+                  </div>
+                  <div>
+                    <div class="pu-uname">{{ u.get_full_name|default:u.username }}</div>
+                    <div class="pu-uemail">{{ u.email }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Role -->
+              <td>
+                {% if u.profile.role == 'student' %}
+                  <span class="pu-pill student">
+                    <span class="material-symbols-outlined">school</span>Student
+                  </span>
+                {% elif u.profile.role == 'teacher' %}
+                  <span class="pu-pill teacher">
+                    <span class="material-symbols-outlined">person_book</span>Teacher
+                  </span>
+                {% else %}
+                  <span class="pu-pill none">—</span>
+                {% endif %}
+              </td>
+
+              <!-- ID / Roll No -->
+              <td>
+                {% if u.profile.role == 'student' and u.profile.roll_number %}
+                  <span class="pu-id student">
+                    <span class="material-symbols-outlined">badge</span>
+                    {{ u.profile.roll_number }}
+                  </span>
+                {% elif u.profile.role == 'teacher' and u.profile.teacher_id %}
+                  <span class="pu-id teacher">
+                    <span class="material-symbols-outlined">badge</span>
+                    {{ u.profile.teacher_id }}
+                  </span>
+                {% else %}
+                  <span class="pu-id none">—</span>
+                {% endif %}
+              </td>
+
+              <!-- Active status -->
+              <td class="hide-mob">
+                {% if u.is_active %}
+                  <span class="pu-pill active" id="pu-status-{{ u.id }}">
+                    <span class="material-symbols-outlined">check_circle</span>Active
+                  </span>
+                {% else %}
+                  <span class="pu-pill inactive" id="pu-status-{{ u.id }}">
+                    <span class="material-symbols-outlined">cancel</span>Inactive
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- Verified -->
+              <td class="hide-mob">
+                {% if u.profile.is_verified %}
+                  <span class="pu-pill verified">
+                    <span class="material-symbols-outlined">verified</span>Verified
+                  </span>
+                {% else %}
+                  <span class="pu-pill pending">
+                    <span class="material-symbols-outlined">pending</span>Pending
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- Joined date -->
+              <td>
+                <div class="pu-date">
+                  {{ u.date_joined|date:"d M" }}
+                  <span class="yr">{{ u.date_joined|date:"Y" }}</span>
+                </div>
+                <div class="pu-date tm">{{ u.date_joined|date:"g:i A" }}</div>
+              </td>
+
+              <!-- Actions -->
+              <td>
+                <div class="pu-actions">
+
+                  <!-- Quick View -->
+                  <button class="pu-abtn" title="Quick View"
+                      onclick="puOpenQV({{ u.id }})">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </button>
+
+                  <!-- Edit -->
+                  <button class="pu-abtn" title="Edit User"
+                      onclick="puOpenEdit(
+                        {{ u.id }},
+                        '{{ u.first_name|escapejs }}',
+                        '{{ u.last_name|escapejs }}',
+                        '{{ u.email|escapejs }}',
+                        '{{ u.profile.role|default:'' }}',
+                        {{ u.is_active|yesno:'true,false' }}
+                      )">
+                    <span class="material-symbols-outlined">edit</span>
+                  </button>
+
+                  <!-- Toggle active -->
+                  <button class="pu-abtn tog" title="{{ u.is_active|yesno:'Deactivate,Activate' }}"
+                      id="pu-tog-{{ u.id }}"
+                      data-active="{{ u.is_active|yesno:'true,false' }}"
+                      onclick="puToggle({{ u.id }}, this)">
+                    <span class="material-symbols-outlined">
+                      {{ u.is_active|yesno:'person_off,person_check' }}
+                    </span>
+                  </button>
+
+                  <!-- Delete (not for self) -->
+                  {% if u.id != request.user.id %}
+                  <button class="pu-abtn del" title="Delete User"
+                      onclick="puOpenDel({{ u.id }}, '{{ u.get_full_name|default:u.username|escapejs }}')">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                  {% endif %}
+
+                </div>
+              </td>
+
+            </tr>
+          {% endif %}
+
+          {% empty %}
+          <tr>
+            <td colspan="8">
+              <div class="pu-empty">
+                <span class="material-symbols-outlined big">manage_accounts</span>
+                <h4>No users found</h4>
+                <p>Try adjusting your search or filter settings.</p>
+              </div>
+            </td>
+          </tr>
+
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Pagination ── -->
+  {% if paginator.num_pages > 1 %}
+  <div class="pu-pag-wrap">
+
+    <div class="pu-pag-info">
+      Page <strong>{{ page_obj.number }}</strong>
+      of <strong>{{ paginator.num_pages }}</strong>
+      &nbsp;·&nbsp; {{ total_results }} result{{ total_results|pluralize }}
+    </div>
+
+    <div class="pu-pag">
+
+      {% if page_obj.has_previous %}
+        <a class="pu-pg" href="?q={{ search }}&role={{ f_role }}&status={{ f_status }}&verified={{ f_verified }}&sort={{ f_sort }}&per_page={{ per_page }}&page=1" title="First">
+          <span class="material-symbols-outlined">first_page</span>
+        </a>
+        <a class="pu-pg" href="?q={{ search }}&role={{ f_role }}&status={{ f_status }}&verified={{ f_verified }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ page_obj.previous_page_number }}" title="Prev">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </a>
+      {% else %}
+        <button class="pu-pg" disabled><span class="material-symbols-outlined">first_page</span></button>
+        <button class="pu-pg" disabled><span class="material-symbols-outlined">chevron_left</span></button>
+      {% endif %}
+
+      {% for p in page_range %}
+        {% if p is None %}
+          <span class="pu-pg ell">…</span>
+        {% elif p == page_obj.number %}
+          <span class="pu-pg cur">{{ p }}</span>
+        {% else %}
+          <a class="pu-pg" href="?q={{ search }}&role={{ f_role }}&status={{ f_status }}&verified={{ f_verified }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ p }}">{{ p }}</a>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <a class="pu-pg" href="?q={{ search }}&role={{ f_role }}&status={{ f_status }}&verified={{ f_verified }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ page_obj.next_page_number }}" title="Next">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </a>
+        <a class="pu-pg" href="?q={{ search }}&role={{ f_role }}&status={{ f_status }}&verified={{ f_verified }}&sort={{ f_sort }}&per_page={{ per_page }}&page={{ paginator.num_pages }}" title="Last">
+          <span class="material-symbols-outlined">last_page</span>
+        </a>
+      {% else %}
+        <button class="pu-pg" disabled><span class="material-symbols-outlined">chevron_right</span></button>
+        <button class="pu-pg" disabled><span class="material-symbols-outlined">last_page</span></button>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endif %}
+
+</div><!-- /pu-card -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     QUICK-VIEW PANEL
+══════════════════════════════════════════════════════════════ -->
+<div class="qv-overlay" id="qv-overlay" onclick="puCloseQV()"></div>
+<div class="qv-panel" id="qv-panel">
+  <div class="qv-head">
+    <h3>User Details</h3>
+    <button class="qv-closebtn" onclick="puCloseQV()">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+  <div class="qv-body" id="qv-body"><!-- filled by JS --></div>
+  <div class="qv-footer" id="qv-footer" style="display:none;"></div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     EDIT MODAL
+══════════════════════════════════════════════════════════════ -->
+<div class="pu-modal-bg" id="pu-edit-modal">
+  <div class="pu-modal">
+    <div class="pu-mhead">
+      <h3>Edit User</h3>
+      <button class="pu-mclose" onclick="puCloseEdit()">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="pu-mbody">
+      <input type="hidden" id="pu-edit-id" />
+      <div class="pu-frow">
+        <div class="pu-fg">
+          <label>First Name <em>*</em></label>
+          <input class="pu-fc" type="text" id="pu-edit-fn" placeholder="First name" />
+        </div>
+        <div class="pu-fg">
+          <label>Last Name</label>
+          <input class="pu-fc" type="text" id="pu-edit-ln" placeholder="Last name" />
+        </div>
+      </div>
+      <div class="pu-fg">
+        <label>Email <em>*</em></label>
+        <input class="pu-fc" type="email" id="pu-edit-em" placeholder="email@example.com" />
+      </div>
+      <div class="pu-frow">
+        <div class="pu-fg">
+          <label>Role</label>
+          <select class="pu-fc" id="pu-edit-role">
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+          </select>
+        </div>
+        <div class="pu-fg">
+          <label>Account Status</label>
+          <select class="pu-fc" id="pu-edit-status">
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="pu-mfoot">
+      <button class="pu-cancel-btn" onclick="puCloseEdit()">Cancel</button>
+      <button class="pu-save-btn" id="pu-save-btn" onclick="puSaveEdit()">
+        <span class="material-symbols-outlined">save</span>
+        <span id="pu-save-txt">Save Changes</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     DELETE CONFIRM MODAL
+══════════════════════════════════════════════════════════════ -->
+<div class="pu-modal-bg" id="pu-del-modal">
+  <div class="pu-modal sm">
+    <div class="pu-mbody" style="padding:28px 28px 24px;">
+      <div class="pu-del-icon">
+        <span class="material-symbols-outlined">delete</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:700;color:#1a1d2e;margin-bottom:8px;">Delete User?</h3>
+      <p style="font-size:13px;color:#6b7280;line-height:1.6;">
+        Are you sure you want to permanently delete
+        <strong id="pu-del-name"></strong>?
+        This cannot be undone.
+      </p>
+      <div class="pu-del-btns">
+        <button class="pu-del-cancel" onclick="puCloseDel()">Cancel</button>
+        <button class="pu-del-ok" id="pu-del-ok" onclick="puExecDelete()">Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Toast Notification -->
+<div id="toast" class="toast">
+    <span id="toastIcon" class="material-symbols-outlined">check_circle</span>
+    <span id="toastMsg"></span>
+</div>
+
+
+{% endblock %}

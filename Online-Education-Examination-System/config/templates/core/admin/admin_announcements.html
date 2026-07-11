@@ -1,0 +1,140 @@
+{% extends 'core/admin_base.html' %}
+
+{% block title %}Announcements{% endblock %}
+{% block page_title %}Announcements{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Platform Announcements</h2>
+    <p>Send important updates to students and teachers</p>
+  </div>
+  <button class="btn-primary new-ann-btn" onclick="openCreateAnnouncementModal()">
+    <span class="material-symbols-outlined" style="font-size: 20px; vertical-align: middle;">add</span>
+    <span>New Announcement</span>
+</button>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <h3>{{ total_ann|default:0 }}</h3>
+    <p>Total Announcements</p>
+  </div>
+  <div class="stat-card">
+    <h3>{{ pinned_count|default:0 }}</h3>
+    <p>Pinned</p>
+  </div>
+  <div class="stat-card">
+    <h3>{{ active_count|default:0 }}</h3>
+    <p>Active</p>
+  </div>
+</div>
+
+<!-- Announcements Table -->
+<table class="admin-table">
+  <thead>
+    <tr>
+      <th>Title</th>
+      <th>Category</th>
+      <th>Target</th>
+      <th>Created</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ann in announcements %}
+    <tr>
+      <td><strong>{{ ann.title }}</strong></td>
+      <td>
+        <span class="category-badge {{ ann.category }}">
+          {{ ann.get_category_display }}
+        </span>
+      </td>
+      <td>{{ ann.get_target_role_display }}</td>
+      <td>{{ ann.created_at|date:"d M Y, g:i A" }}</td>
+      <td>
+        <button onclick="deleteAnnouncement({{ ann.id }})" class="btn-delete">Delete</button>
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="5" style="text-align:center; padding:60px 20px; color:#888;">
+        No announcements yet. Create your first one above.
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Create Announcement Modal -->
+<div class="modal-overlay" id="createAnnModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>New Platform Announcement</h3>
+      <button class="modal-close" onclick="closeCreateModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="annForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="form-group">
+          <label>Title <span style="color:red">*</span></label>
+          <input type="text" name="title" id="annTitle" placeholder="e.g. New Course Available" required>
+        </div>
+
+        <div class="form-group">
+          <label>Message <span style="color:red">*</span></label>
+          <textarea name="message" id="annMessage" rows="5" placeholder="Write announcement message here..." required></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select name="category" id="annCategory">
+              <option value="course">Course Advertisement</option>
+              <option value="exam">Exam & Assessment</option>
+              <option value="result">Result & Certificate</option>
+              <option value="approval">Approval Notice</option>
+              <option value="system">System Notice</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Target Audience</label>
+            <select name="target_role" id="annTarget">
+              <option value="all">All Users</option>
+              <option value="student">Students Only</option>
+              <option value="teacher">Teachers Only</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Attachment (Optional)</label>
+          <div class="file-upload-area" onclick="document.getElementById('annAttachment').click()">
+            <input type="file" id="annAttachment" name="attachment" accept=".pdf,.doc,.docx,.jpg,.png" style="display:none;">
+            <span class="material-symbols-outlined upload-icon">upload_file</span>
+            <p>Click to upload or drag & drop<br><small>PDF, DOC, Images (max 10MB)</small></p>
+            <div id="fileSelectedName" class="file-selected"></div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 8px;">
+          <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; user-select: none;">
+            <input type="checkbox" name="is_pinned" style="width: 18px; height: 18px; accent-color: #2563eb;">
+            <span>Pin this announcement (shows on top)    
+            </span>
+          </label>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitAnnouncement()">Send Announcement</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+

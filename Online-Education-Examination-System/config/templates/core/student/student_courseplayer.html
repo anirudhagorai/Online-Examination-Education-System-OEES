@@ -1,0 +1,377 @@
+{% extends 'core/student_base.html' %}
+{% block title %}{{ course.name }}{% endblock %}
+{% block page_title %}Course Player{% endblock %}
+{% block content %}
+
+<div class="player-container">
+  <!-- Back Button & Course Header -->
+  <div class="player-header">
+    <a href="{% url 'student_courses' %}" class="back-btn">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Back to Courses
+    </a>
+    <div class="player-title-section">
+      <h1 class="player-title">{{ course.name }}</h1>
+      <div class="player-meta">
+        <span class="meta-item">
+          <span class="material-symbols-outlined">person</span>
+          {{ course.teacher.get_full_name|default:"Instructor" }}
+        </span>
+        {% if course.total_videos %}
+        <span class="meta-item">
+          <span class="material-symbols-outlined">play_lesson</span>
+          {{ course.total_videos }} Videos
+        </span>
+        {% endif %}
+        {% if course.total_duration %}
+        <span class="meta-item">
+          <span class="material-symbols-outlined">schedule</span>
+          {{ course.total_duration }}
+        </span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Player Layout -->
+  <div class="player-layout">
+    <!-- Video Player Section -->
+    <div class="video-section">
+      <div class="video-wrapper">
+
+        {% with video=course.videos.first %}
+          {% if video %}
+            <!-- ✅ Uploaded video from MEDIA_ROOT -->
+            <!-- <video controls style="width:100%; height:100%; border-radius:12px; background:#000;">
+              <source src="{{ video.video_file.url }}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video> -->
+            <video id="courseVideo" controls style="width:100%; height:100%; border-radius:12px; background:#000;">
+              <source src="{{ video.video_file.url }}" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+
+          {% elif course.youtube_id %}
+            <!-- YouTube fallback -->
+            <div id="thumbContainer" style="position:absolute; inset:0; cursor:pointer;" onclick="openVideoModal()">
+              <img src="https://img.youtube.com/vi/{{ course.youtube_id }}/maxresdefault.jpg"
+                   style="width:100%; height:100%; object-fit:cover;" />
+              <div style="position:absolute; inset:0; background:rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center;">
+                <div style="background:rgba(255,0,0,0.9); border-radius:50%; width:80px; height:80px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+                  <span style="color:white; font-size:35px; margin-left:6px;">▶</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Video Modal -->
+            <div id="videoModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.92); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+              <button onclick="closeVideoModal()"
+                style="position:absolute; top:20px; right:30px; background:none; border:none; color:white; font-size:40px; cursor:pointer; line-height:1;">×</button>
+              <div style="color:white; font-size:18px; font-weight:600; margin-bottom:16px; text-align:center; padding:0 20px;">{{ course.name }}</div>
+              <div style="position:relative; width:90vw; max-width:960px; aspect-ratio:16/9; background:#000; border-radius:12px; overflow:hidden;">
+                <iframe
+                  id="modalIframe"
+                  style="width:100%; height:100%; border:none;"
+                  src=""
+                  data-src="https://www.youtube-nocookie.com/embed/{{ course.youtube_id }}?autoplay=1&rel=0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowfullscreen>
+                </iframe>
+              </div>
+              <a href="https://www.youtube.com/watch?v={{ course.youtube_id }}" target="_blank"
+                 style="margin-top:16px; display:flex; align-items:center; gap:8px; background:#ff0000; color:white; padding:10px 24px; border-radius:50px; text-decoration:none; font-size:14px; font-weight:600;">
+                <span>▶</span> Open in YouTube
+              </a>
+            </div>
+
+            <script>
+            function openVideoModal() {
+              var modal = document.getElementById('videoModal');
+              var iframe = document.getElementById('modalIframe');
+              modal.style.display = 'flex';
+              iframe.src = iframe.getAttribute('data-src');
+              document.body.style.overflow = 'hidden';
+            }
+            function closeVideoModal() {
+              var modal = document.getElementById('videoModal');
+              var iframe = document.getElementById('modalIframe');
+              modal.style.display = 'none';
+              iframe.src = '';
+              document.body.style.overflow = '';
+            }
+            document.getElementById('videoModal').addEventListener('click', function(e) {
+              if (e.target === this) closeVideoModal();
+            });
+            </script>
+
+          {% else %}
+            <div class="no-video">
+              <span class="material-symbols-outlined">videocam_off</span>
+              <p>No video available for this course yet.</p>
+            </div>
+          {% endif %}
+        {% endwith %}
+
+      </div>
+
+      <!-- Video Controls & Progress -->
+      <div class="video-controls-card">
+        <div class="progress-section">
+          <div class="progress-header">
+            <span class="progress-label">Your Progress</span>
+            <span class="progress-percent">{{ progress.progress }}%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" style="width: {{ progress.progress }}%"></div>
+          </div>
+        </div>
+<!-- 
+        <div class="control-buttons"> -->
+          <!-- <button class="control-btn" onclick="updateProgress({{ progress.progress|add:10 }})"> -->
+            <!-- <button class="control-btn" onclick="markProgress()"></button> -->
+             <!-- <button class="control-btn" onclick="markProgress()" style="font-size:12px;">
+            <span class="material-symbols-outlined">check_circle</span>
+            Mark Progress +10%
+          </button>
+          <button class="control-btn secondary" onclick="resetProgress()">
+            <span class="material-symbols-outlined">refresh</span>
+            Reset Progress
+          </button>
+        </div> -->
+        <div class="control-buttons">
+          <span style="font-size:13px; color:var(--muted);">Progress updates automatically as you watch</span>
+        </div>
+      </div>
+
+      <!-- Course Description -->
+      <div class="description-card">
+        <h3 class="section-title">About This Course</h3>
+        {% if course.description %}
+          <p class="description-text">{{ course.description }}</p>
+        {% else %}
+          <p class="description-text text-muted">No description available.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="player-sidebar">
+      <!-- Course Info Card -->
+      <div class="sidebar-card">
+        <h3 class="sidebar-title">Course Details</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-icon blue">
+              <span class="material-symbols-outlined">video_library</span>
+            </span>
+            <div>
+              <div class="detail-label">Total Videos</div>
+              <div class="detail-value">{{ course.total_videos|default:"N/A" }}</div>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-icon green">
+              <span class="material-symbols-outlined">schedule</span>
+            </span>
+            <div>
+              <div class="detail-label">Duration</div>
+              <div class="detail-value">{{ course.total_duration|default:"N/A" }}</div>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-icon purple">
+              <span class="material-symbols-outlined">analytics</span>
+            </span>
+            <div>
+              <div class="detail-label">Progress</div>
+              <div class="detail-value">{{ progress.progress }}%</div>
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-icon orange">
+              <span class="material-symbols-outlined">school</span>
+            </span>
+            <div>
+              <div class="detail-label">Status</div>
+              <div class="detail-value">{{ course.status|title }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="sidebar-card">
+        <h3 class="sidebar-title">Quick Actions</h3>
+        <div class="action-buttons">
+          <a href="#" class="action-btn">
+            <span class="material-symbols-outlined">quiz</span>
+            Take Quiz
+          </a>
+          <a href="{% url 'student_results' %}" class="action-btn">
+            <span class="material-symbols-outlined">assessment</span>
+            View Results
+          </a>
+          <a href="#" class="action-btn" onclick="toggleResources(event)">
+  <span class="material-symbols-outlined">download</span>
+  Resources ({{ resources|length }})
+</a>
+<div id="resourcesList" style="display:none;">
+  {% for r in resources %}
+  <a href="{{ r.pdf_file.url }}" target="_blank" class="action-btn" style="margin-top:8px;">
+    <span class="material-symbols-outlined">picture_as_pdf</span>
+    {{ r.title|truncatechars:30 }}
+  </a>
+  {% empty %}
+  <p style="font-size:13px;color:var(--muted);padding:8px 16px;">No resources uploaded yet.</p>
+  {% endfor %}
+</div>
+
+<script>
+function toggleResources(e) {
+  e.preventDefault();
+  const list = document.getElementById('resourcesList');
+  list.style.display = list.style.display === 'none' ? 'flex' : 'none';
+  list.style.flexDirection = 'column';
+}
+</script>
+          <button class="action-btn danger" onclick="confirmUnenroll()">
+            <span class="material-symbols-outlined">logout</span>
+            Unenroll
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Unenroll Confirmation Modal -->
+<div class="modal-overlay" id="unenrollModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Confirm Unenrollment</h3>
+      <button class="modal-close" onclick="closeUnenrollModal()"></button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to unenroll from <strong>{{ course.name }}</strong>? Your progress will be lost.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn cancel" onclick="closeUnenrollModal()">Cancel</button>
+      <button class="modal-btn danger" onclick="unenrollCourse()">Unenroll</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+  <span class="material-symbols-outlined" id="toastIcon">check_circle</span>
+  <span id="toastMsg">Progress updated!</span>
+</div>
+
+<script>
+// var currentProgress = {{ progress.progress }};
+
+// function markProgress() {
+//   var newProgress = Math.min(currentProgress + 10, 100);
+//   updateProgress(newProgress);
+// }
+// var currentProgress = {{ progress.progress }};
+
+// function markProgress() {
+//   var newProgress = Math.min(currentProgress + 10, 100);
+//   currentProgress = newProgress;
+//   updateProgress(newProgress);
+// }
+
+// function resetProgress() {
+//   updateProgress(0);
+// }
+
+var currentProgress = {{ progress.progress }};
+var lastSaved = {{ progress.progress }};
+
+// Auto progress tracking
+var video = document.getElementById('courseVideo');
+if (video) {
+  video.addEventListener('timeupdate', function() {
+    if (video.duration) {
+      var watched = Math.floor((video.currentTime / video.duration) * 100);
+      if (watched > currentProgress && watched - lastSaved >= 5) {
+        currentProgress = watched;
+        lastSaved = watched;
+        updateProgress(watched);
+      }
+      document.querySelector('.progress-percent').textContent = watched + '%';
+      document.querySelector('.progress-fill').style.width = watched + '%';
+    }
+  });
+
+  video.addEventListener('ended', function() {
+    updateProgress(100);
+  });
+}
+
+function updateProgress(newProgress) {
+  if (newProgress > 100) newProgress = 100;
+  if (newProgress < 0) newProgress = 0;
+
+  fetch(`/student/course/{{ course.id }}/update-progress/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ progress: newProgress })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      document.querySelector('.progress-percent').textContent = newProgress + '%';
+      document.querySelector('.progress-fill').style.width = newProgress + '%';
+      document.querySelector('.detail-value').textContent = newProgress + '%';
+      showToast('Progress updated to ' + newProgress + '%', 'success');
+    }
+  })
+  .catch(() => showToast('Failed to update progress', 'error'));
+}
+
+function resetProgress() {
+  updateProgress(0);
+}
+
+function confirmUnenroll() {
+  document.getElementById('unenrollModal').classList.add('show');
+}
+
+function closeUnenrollModal() {
+  document.getElementById('unenrollModal').classList.remove('show');
+}
+
+function unenrollCourse() {
+  fetch('{% url "unenroll_course" course.id %}', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'ok') {
+      showToast('Unenrolled successfully', 'success');
+      setTimeout(() => { window.location.href = '{% url "student_courses" %}'; }, 1500);
+    }
+  });
+}
+
+function showToast(message, type = 'success') {
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+  const toastIcon = document.getElementById('toastIcon');
+  toastMsg.textContent = message;
+  toastIcon.textContent = type === 'success' ? 'check_circle' : 'error';
+  toast.className = 'toast show ' + type;
+  setTimeout(() => { toast.classList.remove('show'); }, 3000);
+}
+</script>
+
+{% endblock %}

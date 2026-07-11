@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ProctorScope — Exam</title>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,300;0,400;0,500;1,300&family=Azeret+Mono:wght@300;400;500&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f2ed;--s1:#eceae3;--s2:#e4e0d7;
+  --bd:#d2cdc2;--bd2:#c5bfb2;
+  --ink:#18160f;--ink2:#3a3830;--ink3:#68655d;
+  --acc:#1a5c38;--red:#b83028;--ora:#9e4f00;
+  --mono:'Azeret Mono',monospace;
+  --disp:'Literata',Georgia,serif;
+  --body:'Barlow',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+
+/* warning */
+#wov{display:none;position:fixed;inset:0;z-index:900;align-items:center;justify-content:center;background:rgba(184,48,40,0.14);backdrop-filter:blur(4px)}
+#wov.show{display:flex}
+.wcard{background:#fff;border:2px solid var(--red);border-radius:8px;padding:36px 44px;max-width:420px;text-align:center;box-shadow:0 20px 60px rgba(184,48,40,.18);animation:pop .28s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+.wnum{font-family:var(--mono);font-size:2.4rem;font-weight:500;color:var(--red);margin-bottom:3px}
+.wlbl{font-size:.62rem;font-family:var(--mono);letter-spacing:.12em;color:var(--ink3);text-transform:uppercase;margin-bottom:12px}
+.wtit{font-family:var(--disp);font-size:1.3rem;color:var(--red);margin-bottom:7px}
+.wbod{font-size:.84rem;color:var(--ink3);line-height:1.65;margin-bottom:20px}
+.wbtn{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;padding:10px 24px;background:var(--red);color:#fff;border:none;border-radius:4px;cursor:pointer;transition:opacity .2s}
+.wbtn:hover{opacity:.84}
+
+/* header */
+header{background:var(--ink);color:#fff;padding:0 36px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-shrink:0}
+.brand{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;color:#999}
+.brand strong{color:#fff}
+.hright{display:flex;align-items:center;gap:14px}
+.stu-badge{font-family:var(--mono);font-size:.55rem;letter-spacing:.1em;padding:3px 9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:2px;color:#bbb}
+#timer{font-family:var(--mono);font-size:1rem;letter-spacing:.08em;color:#fff}
+#timer.warn{color:#ff6464;animation:br .8s ease infinite alternate}
+@keyframes br{from{color:#ff6464}to{color:red}}
+
+/* main */
+main{flex:1;display:grid;grid-template-columns:1fr 280px;max-width:1060px;margin:0 auto;width:100%;gap:0;padding:34px 20px}
+.paper{padding-right:40px}
+.pheader{border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:24px}
+.ptit{font-family:var(--disp);font-size:1.55rem;font-weight:400;letter-spacing:-.02em;margin-bottom:5px}
+.pmeta{display:flex;gap:20px;font-family:var(--mono);font-size:.58rem;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-top:8px}
+
+.qdots{display:flex;gap:5px;margin-bottom:22px;flex-wrap:wrap}
+.qd{width:9px;height:9px;border-radius:50%;background:var(--s2);border:1px solid var(--bd2);cursor:pointer;transition:background .2s}
+.qd.answered{background:var(--acc);border-color:var(--acc)}
+.qd.current{background:var(--ink);border-color:var(--ink)}
+
+.qcard{background:#fff;border:1px solid var(--bd);border-radius:6px;padding:24px 28px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.qmeta{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.qnum{font-family:var(--mono);font-size:.56rem;letter-spacing:.12em;color:var(--ink3);text-transform:uppercase}
+.qmrk{font-family:var(--mono);font-size:.54rem;color:var(--acc);border:1px solid rgba(26,92,56,.28);padding:2px 7px;border-radius:2px}
+.qtxt{font-family:var(--disp);font-size:1rem;line-height:1.65;color:var(--ink);margin-bottom:18px;font-style:italic}
+.opts{display:flex;flex-direction:column;gap:7px}
+.opt{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--bd);border-radius:4px;cursor:pointer;transition:all .18s;background:var(--bg);user-select:none}
+.opt:hover{border-color:var(--ink2);background:var(--s1)}
+.opt.sel{border-color:var(--acc);background:rgba(26,92,56,.05)}
+.ol{font-family:var(--mono);font-size:.65rem;color:var(--ink3);min-width:16px;font-weight:500}
+.opt.sel .ol{color:var(--acc)}
+.ot{font-size:.86rem;line-height:1.4;color:var(--ink2)}
+.opt.sel .ot{color:var(--ink)}
+
+.qnav{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+.nb{font-family:var(--mono);font-size:.63rem;letter-spacing:.08em;padding:8px 18px;border-radius:4px;border:1px solid var(--bd2);background:var(--s1);color:var(--ink2);cursor:pointer;transition:all .18s}
+.nb:hover{border-color:var(--ink2);background:var(--s2)}
+.nb:disabled{opacity:.3;cursor:not-allowed}
+.nb.sub{background:var(--ink);color:#fff;border-color:var(--ink)}
+.nb.sub:hover{background:var(--ink2)}
+.qctr{font-family:var(--mono);font-size:.58rem;color:var(--ink3);letter-spacing:.06em}
+
+/* sidebar */
+.sidebar{padding-left:20px;border-left:1px solid var(--bd);display:flex;flex-direction:column;gap:12px}
+.scard{background:#fff;border:1px solid var(--bd);border-radius:5px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.schead{padding:8px 12px;background:var(--s1);border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);display:flex;justify-content:space-between;align-items:center}
+.scbody{padding:12px}
+.exst{display:flex;align-items:center;gap:7px;font-size:.78rem;font-weight:500;color:var(--acc)}
+.estdot{width:7px;height:7px;border-radius:50%;background:var(--acc);animation:pg 1.6s ease infinite}
+@keyframes pg{0%,100%{opacity:1}50%{opacity:.35}}
+.evsub{margin-top:5px;font-family:var(--mono);font-size:.52rem;color:var(--ink3)}
+.evcount{text-align:center;padding:7px 0}
+.evnum{font-family:var(--mono);font-size:1.8rem;font-weight:500;color:var(--red)}
+.evlab{font-family:var(--mono);font-size:.5rem;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+#mlog{max-height:160px;overflow-y:auto}
+#mlog::-webkit-scrollbar{width:2px}
+#mlog::-webkit-scrollbar-thumb{background:var(--bd2)}
+.me{padding:5px 0;border-bottom:1px solid var(--bd);font-size:.68rem;color:var(--ink3);animation:sld .22s ease}
+@keyframes sld{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.me:last-child{border-bottom:none}
+.mtype{font-family:var(--mono);font-size:.5rem;font-weight:500;margin-bottom:1px}
+.tt{color:var(--red)}.tb{color:var(--ora)}.tf{color:var(--acc)}
+.mtime{font-family:var(--mono);font-size:.46rem;color:var(--ink3)}
+.memp{font-family:var(--mono);font-size:.56rem;color:var(--bd2);text-align:center;padding:10px 0;letter-spacing:.08em}
+.conn{display:flex;align-items:center;gap:5px}
+.cdot{width:6px;height:6px;border-radius:50%}
+.clab{font-size:.46rem;color:var(--ink3);font-family:var(--mono)}
+</style>
+</head>
+<body>
+
+<div id="wov">
+  <div class="wcard">
+    <div class="wnum" id="wnum">1</div>
+    <div class="wlbl">Violation Recorded</div>
+    <div class="wtit" id="wtit">Tab Switch Detected</div>
+    <div class="wbod" id="wbod">You navigated away. This has been reported to your proctor.</div>
+    <button class="wbtn" onclick="dismissW()">Return to Exam</button>
+  </div>
+</div>
+
+<header>
+  <div class="brand"><strong>PROCTORSCOPE</strong> &nbsp;/&nbsp; CANDIDATE EXAM</div>
+  <div class="hright">
+    <div class="stu-badge" id="stu-badge">STUDENT —</div>
+    <div class="stu-badge">PROCTORED</div>
+    <div id="timer">45:00</div>
+  </div>
+</header>
+
+<main>
+  <div class="paper">
+    <div class="pheader">
+      <div class="ptit" id="ptit">Loading exam...</div>
+      <div class="pmeta">
+        <span id="pm-q">—</span>
+        <span id="pm-m">—</span>
+        <span id="pm-d">—</span>
+      </div>
+    </div>
+    <div class="qdots" id="qdots"></div>
+    <div id="qbox">
+      <div style="text-align:center;padding:56px;font-family:var(--mono);font-size:.68rem;color:var(--ink3);letter-spacing:.1em">
+        LOADING FROM SERVER...
+      </div>
+    </div>
+    <div class="qnav">
+      <button class="nb" id="bprev" onclick="prevQ()" disabled>← PREV</button>
+      <span class="qctr" id="qctr"></span>
+      <button class="nb" id="bnext" onclick="nextQ()">NEXT →</button>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="scard">
+      <div class="schead">
+        Status
+        <div class="conn" id="conn">
+          <div class="cdot" id="cdot" style="background:var(--bd)"></div>
+          <div class="clab" id="clab">connecting</div>
+        </div>
+      </div>
+      <div class="scbody">
+        <div class="exst"><div class="estdot"></div>In Progress</div>
+        <div class="evsub">Camera monitored · Answers auto-saved</div>
+      </div>
+    </div>
+    <div class="scard">
+      <div class="schead">My Violations <span id="vcb" style="color:var(--red)">0</span></div>
+      <div class="scbody">
+        <div class="evcount">
+          <div class="evnum" id="evnum">0</div>
+          <div class="evlab">incidents logged</div>
+        </div>
+      </div>
+    </div>
+    <div class="scard" style="flex:1">
+      <div class="schead">My Incident Log</div>
+      <div class="scbody" style="padding:8px 12px">
+        <div id="mlog"><div class="memp" id="memp">No violations yet</div></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── Get student ID from URL path (/exam/0, /exam/1, etc.) ───────────────────
+const pathParts = window.location.pathname.split('/').filter(Boolean);
+const SID = parseInt(pathParts[pathParts.length - 1]) || 0;
+const API = `http://${window.location.hostname}:5000`;
+
+document.getElementById('stu-badge').textContent = `STUDENT ${SID+1}`;
+document.title = `ProctorScope — Student ${SID+1} Exam`;
+
+// ── State ────────────────────────────────────────────────────────────────────
+let questions=[], answers=[], curQ=0, viols=0, secsLeft=2700, loaded=false, wActive=false;
+
+// ── Load exam ────────────────────────────────────────────────────────────────
+async function loadExam() {
+  try {
+    const d = await (await fetch(`${API}/api/exam`)).json();
+    setConn(true);
+    questions = d.questions||[];
+    answers   = new Array(questions.length).fill(null);
+    secsLeft  = (d.duration_minutes||45)*60;
+    document.getElementById('ptit').textContent = d.title||'Examination';
+    document.getElementById('pm-q').textContent = questions.length+' Questions';
+    document.getElementById('pm-m').textContent = questions.reduce((a,q)=>a+q.marks,0)+' Marks';
+    document.getElementById('pm-d').textContent = (d.duration_minutes||45)+' Minutes';
+    buildDots(); renderQ(); loaded=true;
+  } catch(e) {
+    setConn(false);
+    document.getElementById('qbox').innerHTML=`
+      <div style="text-align:center;padding:56px;font-family:var(--mono);font-size:.7rem;color:var(--red);line-height:2">
+        SERVER NOT RUNNING<br>Start server.py then refresh
+      </div>`;
+    setTimeout(loadExam,3000);
+  }
+}
+
+function setConn(ok){
+  document.getElementById('cdot').style.background = ok?'var(--acc)':'var(--red)';
+  document.getElementById('clab').textContent = ok?'server connected':'server offline';
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function buildDots(){
+  const w=document.getElementById('qdots'); w.innerHTML='';
+  questions.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='qd'+(i===curQ?' current':'')+(answers[i]!==null?' answered':'');
+    d.title=`Q${i+1}`; d.onclick=()=>{curQ=i;renderQ();};
+    w.appendChild(d);
+  });
+}
+
+function renderQ(){
+  if(!questions.length) return;
+  const q=questions[curQ]; const L=['A','B','C','D'];
+  const isLast=curQ===questions.length-1;
+  document.getElementById('qctr').textContent=`Q ${curQ+1} / ${questions.length}`;
+  document.getElementById('bprev').disabled=curQ===0;
+  const nb=document.getElementById('bnext');
+  nb.textContent=isLast?'SUBMIT ✓':'NEXT →'; nb.className='nb'+(isLast?' sub':'');
+  document.getElementById('qbox').innerHTML=`
+    <div class="qcard">
+      <div class="qmeta"><div class="qnum">Question ${curQ+1}</div><div class="qmrk">${q.marks} mark${q.marks>1?'s':''}</div></div>
+      <div class="qtxt">${q.text}</div>
+      <div class="opts">${q.options.map((o,i)=>`
+        <div class="opt${answers[curQ]===i?' sel':''}" onclick="selOpt(${i})">
+          <div class="ol">${L[i]}</div><div class="ot">${o}</div>
+        </div>`).join('')}</div>
+    </div>`;
+  buildDots();
+}
+
+function selOpt(i){answers[curQ]=i;renderQ();}
+function nextQ(){if(curQ<questions.length-1){curQ++;renderQ();}else submitExam();}
+function prevQ(){if(curQ>0){curQ--;renderQ();}}
+function submitExam(){
+  const ans=answers.filter(a=>a!==null).length;
+  if(ans<questions.length&&!confirm(`Answered ${ans}/${questions.length}. Submit anyway?`))return;
+  alert(`Submitted!\nAnswered: ${ans}/${questions.length}\nViolations: ${viols}`);
+}
+
+// ── Timer ────────────────────────────────────────────────────────────────────
+setInterval(()=>{
+  if(!loaded)return;
+  secsLeft=Math.max(0,secsLeft-1);
+  const m=String(Math.floor(secsLeft/60)).padStart(2,'0');
+  const s=String(secsLeft%60).padStart(2,'0');
+  const el=document.getElementById('timer');
+  el.textContent=`${m}:${s}`;
+  if(secsLeft<=300)el.classList.add('warn');
+  if(secsLeft===0)submitExam();
+},1000);
+
+// ── Violation logging ─────────────────────────────────────────────────────────
+async function postViol(type, detail){
+  const payload=JSON.stringify({type,detail});
+  try{
+    await fetch(`${API}/api/event/${SID}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:payload,keepalive:true
+    });
+  }catch(e){}
+  try{ navigator.sendBeacon(`${API}/api/event/${SID}`,
+    new Blob([payload],{type:'application/json'})); }catch(e){}
+}
+
+function logViol(type,detail){
+  viols++;
+  document.getElementById('evnum').textContent=viols;
+  document.getElementById('vcb').textContent=viols;
+  document.getElementById('memp')?.remove();
+  const log=document.getElementById('mlog');
+  const ts=new Date().toTimeString().slice(0,8);
+  const cls=type==='TAB_SWITCH'?'tt':type==='WINDOW_BLUR'?'tb':'tf';
+  const div=document.createElement('div'); div.className='me';
+  div.innerHTML=`<div class="mtype ${cls}">${type.replace(/_/g,' ')}</div><div class="mtime">${ts}</div>`;
+  log.insertBefore(div,log.firstChild);
+  postViol(type,detail);
+}
+
+function showWarn(title,body){
+  if(wActive)return; wActive=true;
+  document.getElementById('wnum').textContent=viols;
+  document.getElementById('wtit').textContent=title;
+  document.getElementById('wbod').textContent=body;
+  document.getElementById('wov').classList.add('show');
+}
+function dismissW(){wActive=false;document.getElementById('wov').classList.remove('show');}
+
+// ── Tab switch detection ──────────────────────────────────────────────────────
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden'){
+    logViol('TAB_SWITCH','Candidate switched away from exam tab');
+  } else {
+    logViol('WINDOW_FOCUS','Candidate returned to exam tab');
+    showWarn('Tab Switch Detected','You navigated away from the exam. This has been reported to your proctor.');
+  }
+});
+
+window.addEventListener('blur',()=>{
+  if(document.visibilityState==='visible'){
+    logViol('WINDOW_BLUR','Browser window lost focus (Alt+Tab or external click)');
+    showWarn('Window Focus Lost','You switched to another application. This has been logged.');
+  }
+});
+
+loadExam();
+</script>
+</body>
+</html>

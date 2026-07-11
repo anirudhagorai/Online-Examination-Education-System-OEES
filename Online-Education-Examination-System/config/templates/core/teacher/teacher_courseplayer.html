@@ -1,0 +1,219 @@
+{% extends 'core/teacher_base.html' %}
+{% load static %}
+{% block title %}{{ course.name }}{% endblock %}
+{% block page_title %}Course Player{% endblock %}
+
+{% block content %}
+<div class="player-container">
+
+  <!-- Header -->
+  <div class="player-header">
+    <a href="{% url 'teacher_courses' %}" class="back-btn">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Back to Courses
+    </a>
+    <div class="player-title-section">
+      <h1 class="player-title">{{ course.name }}</h1>
+      <div class="player-meta">
+        <span class="meta-item">
+          <span class="material-symbols-outlined">group</span>
+          {{ course.students.count }} Students
+        </span>
+        {% if course.total_videos %}
+        <span class="meta-item">
+          <span class="material-symbols-outlined">play_lesson</span>
+          {{ course.total_videos }} Videos
+        </span>
+        {% endif %}
+        {% if course.total_duration %}
+        <span class="meta-item">
+          <span class="material-symbols-outlined">schedule</span>
+          {{ course.total_duration }}
+        </span>
+        {% endif %}
+        <span class="badge {{ course.status|default:'draft' }}">{{ course.status|capfirst }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="player-layout">
+
+    <!-- Video Section -->
+    <div class="video-section">
+      <div class="video-wrapper">
+        {% if video %}
+          <video controls id="courseVideo" style="width:100%;height:100%;border-radius:12px;background:#000;">
+            <source src="{{ video.video_file.url }}" type="video/mp4">
+            Your browser does not support the video tag.
+          </video>
+        {% else %}
+          <div class="no-video">
+            <span class="material-symbols-outlined">videocam_off</span>
+            <p>No video uploaded yet.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Replace Video Card -->
+      <div class="description-card">
+        <div class="section-title-row">
+          <h3 class="section-title">Replace Video</h3>
+        </div>
+        <div class="replace-form">
+          <div class="replace-field">
+            <label>New MP4 Video</label>
+            <input type="file" id="newVideoFile" accept="video/mp4" class="file-input">
+          </div>
+          <div class="replace-field">
+            <label>New Thumbnail</label>
+            <input type="file" id="newThumbnail" accept="image/*" class="file-input">
+          </div>
+          <button class="save-btn-player" id="replaceBtn" onclick="replaceVideo()">
+            <span class="material-symbols-outlined">upload</span>
+            Upload & Replace
+          </button>
+        </div>
+        <div class="profile-toast" id="replaceToast"></div>
+      </div>
+
+      <!-- Course Description -->
+      <div class="description-card">
+        <h3 class="section-title">About This Course</h3>
+        <p class="description-text" id="descText">{{ course.description|default:"No description available." }}</p>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="player-sidebar">
+
+      <!-- Edit Course Card -->
+      <div class="sidebar-card">
+        <div class="section-title-row">
+          <h3 class="sidebar-title">Edit Course</h3>
+          <button class="icon-edit-btn" id="editToggleBtn" onclick="toggleCourseEdit()">
+            <span class="material-symbols-outlined">edit</span>
+          </button>
+        </div>
+
+        <!-- View Mode -->
+        <div id="courseViewMode">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-icon blue"><span class="material-symbols-outlined">menu_book</span></span>
+              <div>
+                <div class="detail-label">Name</div>
+                <div class="detail-value" id="view-name">{{ course.name }}</div>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-icon green"><span class="material-symbols-outlined">check_circle</span></span>
+              <div>
+                <div class="detail-label">Status</div>
+                <div class="detail-value" id="view-status">{{ course.status|capfirst }}</div>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-icon purple"><span class="material-symbols-outlined">video_library</span></span>
+              <div>
+                <div class="detail-label">Total Videos</div>
+                <div class="detail-value" id="view-videos">{{ course.total_videos|default:"N/A" }}</div>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-icon orange"><span class="material-symbols-outlined">schedule</span></span>
+              <div>
+                <div class="detail-label">Duration</div>
+                <div class="detail-value" id="view-duration">{{ course.total_duration|default:"N/A" }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Mode -->
+        <div id="courseEditMode" style="display:none;">
+          <div class="edit-form">
+            <div class="edit-field">
+              <label>Course Name</label>
+              <input type="text" id="edit-name" class="edit-input" value="{{ course.name }}">
+            </div>
+            <div class="edit-field">
+              <label>Status</label>
+              <select id="edit-status" class="edit-input">
+                <option value="draft" {% if course.status == 'draft' %}selected{% endif %}>Draft</option>
+                <option value="active" {% if course.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="pending" {% if course.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="completed" {% if course.status == 'completed' %}selected{% endif %}>Completed</option>
+              </select>
+            </div>
+            <div class="edit-field">
+              <label>Description</label>
+              <textarea id="edit-desc" class="edit-input edit-textarea">{{ course.description }}</textarea>
+            </div>
+            <div class="edit-field-row">
+              <div class="edit-field">
+                <label>Total Videos</label>
+                <input type="number" id="edit-videos" class="edit-input" value="{{ course.total_videos }}" min="0">
+              </div>
+              <div class="edit-field">
+                <label>Duration</label>
+                <input type="text" id="edit-duration" class="edit-input" value="{{ course.total_duration }}">
+              </div>
+            </div>
+            <div class="edit-actions">
+              <button class="save-btn-player" onclick="saveCourseDetails()">
+                <span class="material-symbols-outlined">save</span>Save
+              </button>
+              <button class="cancel-btn-player" onclick="toggleCourseEdit()">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="profile-toast" id="editToast"></div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="sidebar-card">
+        <h3 class="sidebar-title">Quick Actions</h3>
+        <div class="action-buttons">
+          <a href="{% url 'teacher_courses' %}" class="action-btn">
+            <span class="material-symbols-outlined">arrow_back</span>
+            All Courses
+          </a>
+          <button class="action-btn danger" onclick="openDeleteModal({{ course.id }},'{{ course.name }}')">
+            <span class="material-symbols-outlined">delete</span>
+            Delete Course
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal (reuses teacher_account.js logic) -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="delete-modal">
+    <div class="del-icon"><span class="material-symbols-outlined">delete</span></div>
+    <h3>Delete Course?</h3>
+    <p>Are you sure you want to delete <strong id="deleteName"></strong>? This will also remove enrolled students.</p>
+    <div class="del-buttons">
+      <button class="del-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="del-confirm" onclick="confirmDeleteAndRedirect()">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="material-symbols-outlined" style="font-size:18px;" id="toastIcon">check_circle</span>
+  <span id="toastMsg">Done!</span>
+</div>
+
+<!-- Hidden values for JS -->
+<input type="hidden" id="csrf-token" value="{{ csrf_token }}">
+<input type="hidden" id="course-id" value="{{ course.id }}">
+<input type="hidden" id="replace-video-url" value="{% url 'teacher_replace_video' course.id %}">
+<input type="hidden" id="edit-course-url" value="{% url 'teacher_edit_course' course.id %}">
+<input type="hidden" id="delete-course-url" value="{% url 'teacher_delete_course' course.id %}">
+
+{% endblock %}

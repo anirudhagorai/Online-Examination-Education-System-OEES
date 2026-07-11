@@ -1,0 +1,439 @@
+{% extends 'core/teacher_base.html' %}
+{% block title %}Announcements{% endblock %}
+{% block page_title %}Announcements{% endblock %}
+
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Announcements & Assignments</h2>
+    <p>Post announcements and assignments to your students - sent to their Gmail automatically</p>
+  </div>
+  <button class="btn-primary" onclick="openCreateModal()">
+    <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+    Create New
+  </button>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-icon blue"><span class="material-symbols-outlined">campaign</span></div>
+    <div><div class="stat-val">{{ total }}</div><div class="stat-lbl">Total Posted</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><span class="material-symbols-outlined">notifications</span></div>
+    <div><div class="stat-val">{{ total_ann }}</div><div class="stat-lbl">Announcements</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><span class="material-symbols-outlined">assignment</span></div>
+    <div><div class="stat-val">{{ total_asgn }}</div><div class="stat-lbl">Assignments</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon {% if unread_count > 0 %}red{% else %}blue{% endif %}">
+      <span class="material-symbols-outlined">mark_email_unread</span>
+    </div>
+    <div>
+      <div class="stat-val">{{ unread_count }}</div>
+      <div class="stat-lbl">Unread Messages</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Tabs -->
+<div class="main-tabs" id="mainTabs">
+  <button class="main-tab active" onclick="switchMainTab('announcements', this)">
+    <span class="material-symbols-outlined">campaign</span>
+    Announcements
+  </button>
+  <button class="main-tab" onclick="switchMainTab('messages', this)">
+    <span class="material-symbols-outlined">forum</span>
+    Messages
+    {% if unread_count > 0 %}
+    <span class="unread-dot">{{ unread_count }}</span>
+    {% endif %}
+  </button>
+</div>
+
+
+<!-- Tab: 1 Announcements -->
+ <div id="tabAnnouncements" class="tab-section">
+  <!-- Filter Tabs -->
+  <div class="toolbar">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" onclick="filterAnn('all',this)">All</button>
+      <button class="filter-tab" onclick="filterAnn('announcement',this)">Announcements</button>
+      <button class="filter-tab" onclick="filterAnn('assignment',this)">Assignments</button>
+    </div>
+  </div>
+  <!-- Announcement List -->
+  <div class='ann-list' id='annList'>
+    {% for ann in announcements %}
+    <div class="ann-card {{ ann.type }}" data-type="{{ ann.type }}">
+      <div class='ann-top'>
+        <div class='ann-left'>
+          <div class='ann-badges'>
+            {% if ann.type == 'announcement' %}
+            <span class="type-badge announcement">
+              <span class='material-symbols-outlined'>campaign</span>
+              Announcement
+            </span>
+            {% else %}
+            <span class='type-badge assignment'>
+              <span class='material-symbols-outlined'>assignment</span>
+              Assignment
+            </span>
+            {% endif %}
+            <span class="priority-badge {{ ann.priority }}">{{ ann.priority|capfirst }}</span>
+            <!-- New badge logic for unread messages -->
+            {% if request.user not in ann.read_by.all %}
+            <span style="background-color: #ef4444; color: white; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 20px; display: inline-block; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5;">New</span>
+            {% endif %}
+            <span class="email-sent-tag">
+              <span class="material-symbols-outlined" style="font-size: 12px;">mark_email_read</span>
+              Email Sent
+            </span>
+          </div>
+          <div class="ann-title">{{ ann.title }}</div>
+        </div>
+        <div class="ann-actions">
+          <button class="btn-icon" onclick="openDeleteModal({{ ann.id }},'{{ ann.title|escapejs }}')" title="Delete">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="ann-msg">{{ ann.message }}</div>
+
+      {% if ann.attachment %}
+      <div class="msg-attachment" style="margin-top: 15px; padding: 10px 15px; background: #f4f6fa; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #e4e8f0;">
+        <span class="material-symbols-outlined" style="color: #2563eb; font-size: 20px;">description</span>
+        <a href="{{ ann.attachment.url }}" target="_blank" style="color: #2563eb; text-decoration: none; font-weight: 500; font-size: 14px;">View Attachment</a>
+      </div>
+      {% endif %}
+
+      {% if ann.due_date %}
+      <div class="due-date-chip">
+        <span class="material-symbols-outlined">event</span>
+        Due: {{ ann.due_date|date:"d M Y, g:i A" }}
+      </div>
+      {% endif %}
+
+      <div class="ann-meta">
+        <span class="ann-meta-item">
+          <span class="material-symbols-outlined">menu_book</span>
+          {{ ann.course.name|default:"All Courses" }}
+        </span>
+        <span class="ann-meta-item">
+          <span class="material-symbols-outlined">group</span>
+          {{ ann.course.students.count|default:"All" }} students
+        </span>
+        <span class="ann-meta-item">
+          <span class="material-symbols-outlined">schedule</span>
+          {{ ann.created_at|date:"d M Y, g:i A" }}
+        </span>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty-state">
+      <span class="material-symbols-outlined">campaign</span>
+      <h3>No announcements yet</h3>
+      <p>Create your first announcement or assignment for your students.</p>
+      <button class="btn-primary" onclick="openCreateModal()">
+        <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+        Create Now
+      </button>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+
+
+<!-- Messages Tab -->
+<div class="tab-panel tab-messages" id="tabMessages" style="display: none;">
+  {% for msg in inbox_messages %}
+  <div class="msg-card inbox" id="msg-{{ msg.id }}">
+    <div class="msg-head">
+      <div style="flex: 1;min-width: 0;">
+        <div class="msg-subject" style="display: inline-flex;align-items: center;gap: 8px;">
+          <span>{{ msg.subject }}</span>
+          {% if not msg.is_read %}
+            <span style="background-color: #ef4444; color: white; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 20px; display: inline-block; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5;">New</span>
+          {% endif %}
+        </div>
+        <div class="msg-meta" style="margin-top: 4px;">
+          <span style="display: flex;align-items: center;gap: 4px;">
+            <span class="material-symbols-outlined">person</span>
+            From: {{ msg.sender.get_full_name|default:msg.sender.username }}
+          </span>
+          <span style="display: flex;align-items: center;gap: 4px;">
+            <span class="material-symbols-outlined">schedule</span>
+            {{ msg.created_at|date:"d M Y, g:i A" }}
+          </span>
+          
+        </div>
+        <div class="msg-actions">
+          <button class="btn-msg-action reply" onclick="openReplyModal({{ msg.id }}, '{{ msg.subject|escapejs }}')" title="Reply">
+            <span class="material-symbols-outlined">reply</span>
+          </button>
+        </div>
+      </div>
+      
+    </div>
+
+
+    <div class="msg-body">{{ msg.body }}</div>
+    {% if msg.attachment %}
+    <div class="msg-attachment">
+      <a href="{{ msg.attachment.url }}" target="_blank" class="attachment-link">
+        <span class="material-symbols-outlined">attach_file</span>
+        View Attachment
+      </a>
+    </div>
+    {% endif %}
+
+    {% for reply in msg.replies.all %}
+    <div class="reply-thread">
+      <div class="reply-header">
+        <span class="material-symbols-outlined">reply</span>
+        {{ reply.sender.get_full_name|default:reply.sender.username }} · {{ reply.created_at|date:"d M Y, g:i A" }}
+      </div>
+      <div class="reply-body">
+        {{ reply.body }}
+      </div>
+      {% if reply.attachment %}
+      <a href="{{ reply.attachment.url }}" target="_blank" class="attachment-link">
+        <span class="material-symbols-outlined">attach_file</span>
+        Attachment
+      </a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  
+  {% endfor %}
+
+  {% for msg in sent_messages %}
+  <div class="msg-card inbox" id="msg-{{ msg.id }}">
+    <div class="msg-head">
+      <div style="flex: 1;min-width: 0;">
+        <div class="msg-subject">{{ msg.subject }}</div>
+        <div class="msg-meta" style="margin-top: 4px;">
+          <span style="display: flex;align-items: center;gap: 4px;">
+            <span class="material-symbols-outlined">person</span>
+            From: {{ msg.sender.get_full_name|default:msg.sender.username }}
+          </span>
+          <span style="display: flex;align-items: center;gap: 4px;">
+            <span class="material-symbols-outlined">schedule</span>
+            {{ msg.created_at|date:"d M Y, g:i A" }}
+          </span>
+          
+        </div>
+      </div>
+      <div class="msg-actions">
+        <button class="btn-msg-action edit" onclick="openEditModal({{ msg.id }}, '{{ msg.subject|escapejs }}', '{{ msg.body|escapejs }}')" title="Edit">
+          <span class="material-symbols-outlined">edit</span>
+        </button>
+      </div>
+      <div class="msg-actions">
+        <button class="btn-msg-action delete" onclick="openDeleteModal({{ msg.id }}, '{{ msg.subject|escapejs }}')" title="Delete">
+          <span class="material-symbols-outlined">delete</span>
+        </button>
+      </div>
+    </div>
+
+
+    <div class="msg-body">{{ msg.body }}</div>
+    {% if msg.attachment %}
+    <div class="msg-attachment">
+      <a href="{{ msg.attachment.url }}" target="_blank" class="attachment-link">
+        <span class="material-symbols-outlined">attach_file</span>
+        View Attachment
+      </a>
+    </div>
+    {% endif %}
+
+    {% for reply in msg.replies.all %}
+    <div class="reply-thread">
+      <div class="reply-header">
+        <span class="material-symbols-outlined">reply</span>
+        {{ reply.sender.get_full_name|default:reply.sender.username }} · {{ reply.created_at|date:"d M Y, g:i A" }}
+      </div>
+      <div class="reply-body">
+        {{ reply.body }}
+      </div>
+      {% if reply.attachment %}
+      <a href="{{ reply.attachment.url }}" target="_blank" class="attachment-link">
+        <span class="material-symbols-outlined">attach_file</span>
+        Attachment
+      </a>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% empty %}
+  <div class="empty-state">
+    <span class="material-symbols-outlined">forum</span>
+    <p>No messages.</p>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Create Modal -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalHeading">Create Announcement</h3>
+      <button class="modal-close" onclick="closeCreateModal()">X</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Type Selector -->
+      <div class="type-selector">
+        <div class="type-opt ann selected" id="typeAnn" onclick="selectType('announcement')">
+          <span class="material-symbols-outlined">campaign</span>
+          <div class="type-opt-label">Announcement</div>
+          <div class="type-opt-desc">General message to students</div>
+        </div>
+        <div class="type-opt" id="typeAsgn" onclick="selectType('assignment')">
+          <span class="material-symbols-outlined">assignment</span>
+          <div class="type-opt-label">Assignment</div>
+          <div class="type-opt-desc">Task with due date</div>
+        </div>
+      </div>
+
+      <!-- Email info -->
+      <div class="email-info">
+        <span class="material-symbols-outlined">send</span>
+        This will automatically send an email to all enrolled students' Gmail accounts.
+      </div>
+
+      <form id="annForm">
+        {% csrf_token %}
+        <input type="hidden" id="annType" name="type" value="announcement" />
+
+        <div class="form-group">
+          <label>Title <span>*</span></label>
+          <input type="text" class="form-control" id="annTitle" name="title" placeholder="e.g. Mid-term Exam Schedule" required />
+        </div>
+
+        <div class="form-group">
+          <label>Message <span>*</span></label>
+          <textarea class="form-control" name="message" id="annMessage" placeholder="Write your message here..." required></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Course</label>
+            <select class="form-control" name="course_id" id="annCourse">
+              <option value="">All My Courses</option>
+              {% for course in courses %}
+              <option value="{{ course.id }}">{{ course.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select class="form-control" name="priority" id="annPriority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Due date - only for assignments -->
+        <div class="form-group" id="dueDateGroup" style="display: none;">
+          <label>Due Date <span>*</span></label>
+          <input type="datetime-local" class="form-control" name="due_date" id="annDueDate" />
+          <div class="form-hint">
+            <span class="material-symbols-outlined" style="font-size: 14px;">info</span>
+            Students will see this deadline prominently displayed.
+          </div>
+        </div>
+
+        <!-- Attachment (Optional) -->
+        <div class="form-group">
+          <label>Attachment (Optional)</label>
+          <div class="file-upload-wrap" onclick="document.getElementById('msgFile').click()">
+            <input type="file" id="msgFile" name="attachment" accept=".pdf,.doc,.docx" onchange="onFileSelect(this)" />
+            <span class="material-symbols-outlined upload-icon">upload_file</span>
+            <p>Click to upload or drag and drop<br><strong>PDF, DOC</strong>(max 10MB)</p>
+            <div class="file-selected" id="fileSelected">
+              <span class="material-symbols-outlined" style="font-size: 14px;vertical-align: middle;">check_circle</span>
+              <span id="fileName"></span>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn-submit" id="submitAnnBtn" onclick="submitAnnouncement()">
+        <span class="material-symbols-outlined" style="font-size: 15px;">send</span>
+        <span id="submitAnnBtnText">Post & Send Email</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirm Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="del-modal">
+    <div class="del-icon"><span class="material-symbols-outlined">delete</span></div>
+    <h3>Delete?</h3>
+    <p>Are you sure you want to delete <strong id="deleteTitle"></strong>? This cannot be undone.</p>
+    <div class="del-buttons">
+      <button class="del-cancel" onclick="closeDeleteModal()">Cancel</button>
+      <button class="del-confirm" onclick="confirmDelete()">Yes, Delete</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Reply Modal -->
+<div class="modal-overlay" id="replyModal">
+  <div class="reply-modal">
+    <div class="modal-head">
+      <h3>Reply to Message</h3>
+      <button class="modal-close" onclick="closeReplyModal()">X</button>
+    </div>
+    <div class="modal-body">
+      <form id="replyForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" id="replyParentId" name="parent_id" value="" />
+        <div class="form-group">
+          <label>Subject</label>
+          <input type="text" class="form-control" id="replySubject" disabled />
+        </div>
+        <div class="form-group">
+          <label for="replyBody">Your Reply <span>*</span></label>
+          <textarea class="form-control" name="body" id="replyBody" placeholder="Write your reply..." required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="Attachment (Optional)"></label>
+          <div class="file-upload-wrap" onclick="document.getElementById('replyFile').click()">
+            <input type="file" id="replyFile" name="attachment" accept=".pdf,.doc,.docx" />
+            <span class="material-symbols-outlined upload-icon">upload_file</span>
+            <p>Click to upload <br><strong>PDF, DOC</strong></p>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeReplyModal()">Cancel</button>
+      <button type="button" class="btn-submit" id="replySaveBtn" onclick="sendReply()">
+        <span class="material-symbols-outlined" style="font-size: 15px;">send</span>
+        <span id="replyBtnText">Send Reply</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="material-symbols-outlined" style="font-size: 18px;" id="toastIcon">check_circle</span>
+  <span id="toastMsg">Posted!</span>
+</div>
+{% endblock %}

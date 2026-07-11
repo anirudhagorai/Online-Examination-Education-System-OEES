@@ -1,0 +1,86 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Poppins:ital,wght@0,100;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Saira:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <link rel="icon" type="image/x-icon" href="{% static 'assets/images/favicon.ico'%}">
+  <link rel="stylesheet" href="{% static 'assets/css/teacher_account.css' %}">
+  <title>EduExam - {% block title %}Teacher{% endblock %}</title>
+</head>
+<body>
+  <!-- Overlay -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img class="logo-icon" src="{% static 'assets/images/logo.png' %}" alt="logo" href="{% url 'teacher_dashboard' %}">
+      <p class="logo-text">EduExam</p>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" href="{% url 'teacher_dashboard' %}">
+        <span class="material-symbols-outlined">dashboard</span>Dashboard
+      </a>
+
+      
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <a class="nav-item logout" href="#" onclick="confirmLogout(event)">
+        <span class="material-symbols-outlined">logout</span>Logout
+      </a>
+
+      <!-- Confirmation Modal -->
+      <div class="modal-overlay" id="logoutModal">
+        <div class="logout-modal">
+          <span class="material-symbols-outlined">logout</span>
+          <h3>Logout?</h3>
+          <p>Are you sure you want to logout?</p>
+          <div class="cancel">
+            <button onclick="closeLogout()">Cancel</button>
+            <a href="{% url 'logout' %}">Yes, Logout</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ====MAIN==== -->
+  <div class="main">
+
+    <!-- Top-bar -->
+     <header class="top-bar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <span class="material-symbols-outlined">density_medium</span>
+      </button>
+      <span class="topbar-title">{% block page_title %}{% endblock %}</span>
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Messages">
+          <span class="material-symbols-outlined">message</span>
+        </button>
+        <button class="icon-btn" title="Notifications">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="badge">1</span>
+        </button>
+        <button class="avatar-btn" title="Profile">AG</button>
+      </div>
+    </header>
+
+    <main class="content">
+      {% block content %}
+      {% endblock %}
+    </main>
+
+    <footer class="footer">EduExam &copy; 2026</footer>
+  </div>
+
+  <script src="{% static '/assets/js/teacher_account.js' %}" defer></script>  
+</body>
+</html>

@@ -1,0 +1,299 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Poppins:ital,wght@0,100;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Saira:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <link rel="icon" type="image/x-icon" href="{% static 'assets/images/favicon.ico'%}">
+  <link rel="stylesheet" href="{% static 'assets/css/teacher_account.css' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>EduExam - {% block title %}Teacher{% endblock %}</title>
+</head>
+<body>
+  <!-- Overlay -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img class="logo-icon" src="{% static 'assets/images/logo.png' %}" alt="logo" href="{% url 'teacher_dashboard' %}">
+      <p class="logo-text">EduExam</p>
+    </div>
+
+    <!-- Avatar + Name + Role -->
+    <div class="sidebar-user">
+      <div class="avatar avatar-lg avatar-{{ role|default:'teacher' }}">
+
+        {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+        {% else %}
+          {{ initials|default:'?' }}
+        {% endif %}
+
+        {{ initials|default:'?' }}
+
+      </div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name">
+          {{ fullname|default:request.user.username }}
+        </div>
+        <div class="sidebar-user-role">
+          <span class="role-badge {{ role|default:'student' }}">
+            <span class="material-symbols-outlined">
+              {% if role == 'student' %}person
+              {% elif role == 'admin' %}admin_panel_settings
+              {% else %}school{% endif %}
+            </span>
+            {{ role|default:'teacher'|capfirst }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" href="{% url 'teacher_dashboard' %}">
+        <span class="material-symbols-outlined">dashboard</span>Dashboard
+      </a>
+
+      <a class="nav-item {% if active_page == 'courses' %}active{% endif %}" href="{% url 'teacher_courses' %}">
+        <span class="material-symbols-outlined">menu_book</span>Courses
+      </a>
+
+      <a class="nav-item {% if active_page == 'examinations' %}active{% endif %}" href="{% url 'teacher_examinations' %}">
+        <span class="material-symbols-outlined">assignment</span>Examinations
+      </a>
+
+      <a class="nav-item {% if active_page == 'students' %}active{% endif %}" href="{% url 'teacher_students' %}">
+        <span class="material-symbols-outlined">group</span>Students
+      </a>
+
+      <a class="nav-item {% if active_page == 'results' %}active{% endif %}" href="{% url 'teacher_results' %}">
+        <span class="material-symbols-outlined">insert_chart</span>Results
+      </a>
+
+      <a class="nav-item {% if active_page == 'announcements' %}active{% endif %}" href="{% url 'teacher_announcements' %}">
+        <span class="material-symbols-outlined">campaign</span>Announcements
+      </a>
+
+      <a class="nav-item {% if active_page == 'profile' %}active{% endif %}" href="{% url 'teacher_profile' %}">
+        <span class="material-symbols-outlined">perm_identity</span>Profile
+      </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <a class="nav-item logout" href="#" onclick="confirmLogout(event)">
+        <span class="material-symbols-outlined">logout</span>Logout
+      </a>
+
+      <!-- Confirmation Modal -->
+      <div class="modal-overlay" id="logoutModal">
+        <div class="logout-modal">
+          <span class="material-symbols-outlined">logout</span>
+          <h3>Logout?</h3>
+          <p>Are you sure you want to logout?</p>
+          <div class="cancel">
+            <button onclick="closeLogout()">Cancel</button>
+            <form method="POST" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit">Yes, Logout</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ====MAIN==== -->
+  <div class="main">
+
+    <!-- Top-bar -->
+     <header class="top-bar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <span class="material-symbols-outlined">density_medium</span>
+      </button>
+      <span class="topbar-title">{% block page_title %}{% endblock %}</span>
+
+     <div class="topbar-actions">
+        <button class="icon-btn" title="Messages">
+          <span class="material-symbols-outlined">message</span>
+        </button>
+
+        <!-- Notification Bell -->
+        <div style="position:relative;">
+          <button class="icon-btn" title="Notifications" onclick="toggleNotifDropdown(event)">
+            <span class="material-symbols-outlined">notifications</span>
+            {% if unread_notif_count > 0 %}
+            <span class="badge" id="notifBadge">{{ unread_notif_count }}</span>
+            {% else %}
+            <span class="badge" id="notifBadge" style="display:none;">0</span>
+            {% endif %}
+          </button>
+
+          <!-- Dropdown -->
+          <div id="notifDropdown" style="
+            display:none;
+            position:absolute;
+            top:44px;
+            right:0;
+            width:320px;
+            background:#fff;
+            border:1px solid var(--border);
+            border-radius:12px;
+            box-shadow:0 8px 24px rgba(0,0,0,0.12);
+            z-index:999;
+            overflow:hidden;
+          ">
+            <div style="padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+              <span style="font-size:14px;font-weight:700;color:var(--text);">Notifications</span>
+              <button onclick="markAllRead()" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;font-weight:600;">Mark all read</button>
+            </div>
+            <div id="notifList" style="max-height:360px;overflow-y:auto;">
+              <div style="padding:24px;text-align:center;color:var(--muted);font-size:13px;" id="notifEmpty">
+                Loading...
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+      let notifOpen = false;
+
+      function toggleNotifDropdown(e) {
+        e.stopPropagation();
+        notifOpen = !notifOpen;
+        const dropdown = document.getElementById('notifDropdown');
+        dropdown.style.display = notifOpen ? 'block' : 'none';
+        if (notifOpen) loadNotifications();
+      }
+
+      document.addEventListener('click', function() {
+        if (notifOpen) {
+          notifOpen = false;
+          document.getElementById('notifDropdown').style.display = 'none';
+        }
+      });
+
+      function loadNotifications() {
+        fetch('/notifications/')
+          .then(r => r.json())
+          .then(data => {
+            const list = document.getElementById('notifList');
+            const badge = document.getElementById('notifBadge');
+
+            badge.textContent = data.unread_count;
+            badge.style.display = data.unread_count > 0 ? 'flex' : 'none';
+
+            if (data.notifications.length === 0) {
+              list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px;">No notifications yet.</div>';
+              return;
+            }
+
+            const icons = {
+              'new_course': 'menu_book',
+              'new_resource': 'picture_as_pdf',
+              'new_exam': 'assignment',
+              'general': 'notifications'
+            };
+            const colors = {
+              'new_course': '#1c5ebc',
+              'new_resource': '#7c3aed',
+              'new_exam': '#d97706',
+              'general': '#2e9e6e'
+            };
+
+            list.innerHTML = data.notifications.map(n => `
+              <div onclick="readNotif(${n.id}, this)" style="
+                padding:12px 16px;
+                border-bottom:1px solid var(--border);
+                cursor:pointer;
+                background:${n.is_read ? '#fff' : '#f0f5ff'};
+                display:flex;
+                gap:12px;
+                align-items:flex-start;
+                transition:background .15s;
+              " onmouseover="this.style.background='#f4f6fa'" onmouseout="this.style.background='${n.is_read ? '#fff' : '#f0f5ff'}'">
+                <div style="
+                  width:36px;height:36px;border-radius:8px;
+                  background:${colors[n.type]}22;
+                  color:${colors[n.type]};
+                  display:flex;align-items:center;justify-content:center;
+                  flex-shrink:0;
+                ">
+                  <span class="material-symbols-outlined" style="font-size:18px;">${icons[n.type]}</span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:13px;font-weight:${n.is_read ? '500' : '700'};color:var(--text);margin-bottom:2px;">${n.title}</div>
+                  <div style="font-size:12px;color:var(--muted);line-height:1.4;">${n.message}</div>
+                  <div style="font-size:11px;color:#9ca3af;margin-top:4px;">${n.time}</div>
+                </div>
+                ${!n.is_read ? '<div style="width:8px;height:8px;border-radius:50%;background:#1c5ebc;flex-shrink:0;margin-top:4px;"></div>' : ''}
+              </div>
+            `).join('');
+          });
+      }
+
+      function readNotif(id, el) {
+        fetch(`/notifications/read/${id}/`, {
+          method: 'POST',
+          headers: {'X-CSRFToken': '{{ csrf_token }}'}
+        }).then(() => {
+          el.style.background = '#fff';
+          const dot = el.querySelector('div[style*="border-radius:50%"]');
+          if (dot) dot.remove();
+          loadNotifications();
+        });
+      }
+
+      function markAllRead() {
+        const items = document.querySelectorAll('#notifList > div');
+        items.forEach(item => {
+          const onclick = item.getAttribute('onclick');
+          if (onclick) {
+            const id = onclick.match(/\d+/)?.[0];
+            if (id) {
+              fetch(`/notifications/read/${id}/`, {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'}
+              });
+            }
+          }
+        });
+        setTimeout(loadNotifications, 300);
+      }
+      </script>
+
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Messages">
+          <span class="material-symbols-outlined">message</span>
+        </button>
+        <button class="icon-btn" title="Notifications">
+          <span class="material-symbols-outlined">notifications</span>
+          <span class="badge">1</span>
+        </button>
+      </div>
+
+    </header>
+
+    <main class="content">
+      {% block content %}
+      {% endblock %}
+    </main>
+
+    <footer class="footer">EduExam &copy; 2026</footer>
+  </div>
+
+
+  <script src="{% static '/assets/js/teacher_account.js' %}"></script>
+
+  <script src="{% static '/assets/js/teacher_account.js' %}" defer></script>
+
+</body>
+</html>

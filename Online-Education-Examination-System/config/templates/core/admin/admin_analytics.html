@@ -1,0 +1,154 @@
+{% extends 'core/admin_base.html' %}
+{% block title %}Admin Analytics{% endblock %}
+{% block page_title %}Admin Analytics{% endblock %}
+
+
+{% block content %}
+
+<section aria-label="Key metrics">
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-header">
+        <span class="kpi-label">Total Students</span>
+        <div class="kpi-icon">
+          <span class="material-symbols-outlined" aria-hidden="true">group</span>
+        </div>
+      </div>
+      <div class="kpi-value">{{ total_students }}</div>
+      <div class="kpi-meta">
+        <span class="badge-up"><span class="material-symbols-outlined" aria-hidden="true">trending_up</span> {{ new_students }}</span>
+        new this month
+      </div>
+    </div>
+    <div class="kpi-card kpi-green">
+      <div class="kpi-header">
+        <span class="kpi-label">Total Teachers</span>
+        <div class="kpi-icon"><span class="material-symbols-outlined" aria-hidden="true">person_check</span></div>
+      </div>
+      <div class="kpi-value">{{ total_teachers }}</div>
+      <div class="kpi-meta">
+        <span class="badge-up"><span class="material-symbols-outlined" aria-hidden="true">trending_up</span> {{ new_teachers }}</span>
+        new this month
+        {% if pending_teacher_approvals %}
+        · <span class="badge-neutral">{{ pending_teacher_approvals }} pending</span> approval
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="kpi-card kpi-amber">
+      <div class="kpi-header">
+        <span class="kpi-label">Exams Conducted</span>
+        <div class="kpi-icon"><span class="material-symbols-outlined" aria-hidden="true">assignment_turned_in</span></div>
+      </div>
+      <div class="kpi-value">{{ exams_this_month }}</div>
+      <div class="kpi-meta">
+        <span class="badge-neutral">{{ exams_this_year }} total</span>
+        this year
+      </div>
+    </div>
+ 
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-header">
+        <span class="kpi-label">Active Courses</span>
+        <div class="kpi-icon"><span class="material-symbols-outlined" aria-hidden="true">menu_book</span></div>
+      </div>
+      <div class="kpi-value">{{ active_courses }}</div>
+      <div class="kpi-meta">
+        <span class="badge-neutral">{{ pending_courses }} pending</span>
+        approvals needed
+      </div>
+    </div>
+ 
+  </div>
+</section>
+ 
+<section aria-label="Analytics details">
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Exams Conducted</div>
+          <div class="card-sub">Historical data for {{ current_year }}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap" style="height:220px">
+          <canvas id="monthlyChart" aria-label="Monthly exams chart"></canvas>
+        </div>
+        {% if not monthly_exam_history %}
+        <div class="empty-state">
+          <span class="material-symbols-outlined" aria-hidden="true">show_chart</span>
+          <p>No historical exam data available</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Course Analytics</div>
+          <div class="card-sub">Enrollment and average progress</div>
+        </div>
+      </div>
+      <div class="card-body" style="padding: 0 0 4px; overflow-y: auto; max-height: 280px;">
+        {% if course_details %}
+        <table class="data-table" aria-label="Course analytics">
+          <thead>
+            <tr>
+              <th style="text-align: left;">Course Name</th>
+              <th>Status</th>
+              <th>Students</th>
+              <th>Avg Progress</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for course in course_details %}
+            <tr>
+              <td>
+                <div style="font-weight:600;color:#1E293B">{{ course.name|truncatechars:25 }}</div>
+              </td>
+              <td>
+                <span class="badge-neutral" style="font-size: 11px;">{{ course.status|title }}</span>
+              </td>
+              <td style="text-align: center;">{{ course.total_enrolled }}</td>
+              <td style="text-align: center;">
+                {% if course.avg_progress %}
+                  <span class="score-pill score-mid">{{ course.avg_progress|default:0|floatformat:0 }}%</span>
+                {% else %}
+                  <span style="color:#94A3B8;font-size:12px">0%</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+          <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
+          <p>No courses available</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+ 
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  const rawHistoryData = [
+    {% for history in monthly_exam_history %}
+    { 
+      month: "{{ history.month }}", 
+      year: {{ history.year }}, 
+      count: {{ history.exam_count|default:0 }} 
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  ];
+  // Reverse to make chronologically ascending for standard chart trends
+  const historyData = rawHistoryData.reverse();
+</script>
+
+{% endblock content %}

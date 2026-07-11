@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ exam.title }}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family: 'Segoe UI', sans-serif;
+            background:#f4f7fc;
+            color:#222;
+        }
+
+        .exam-layout{
+            display:flex;
+            min-height:100vh;
+        }
+
+        /* ======================
+           SIDEBAR
+        ======================= */
+
+        .sidebar{
+            width:320px;
+            background:#ffffff;
+            border-right:1px solid #e5e7eb;
+            padding:25px;
+            position:sticky;
+            top:0;
+            height:100vh;
+            overflow-y:auto;
+        }
+
+        .timer-box{
+            background:linear-gradient(135deg,#2563eb,#4f46e5);
+            color:#fff;
+            padding:20px;
+            border-radius:18px;
+            margin-bottom:30px;
+            text-align:center;
+            box-shadow:0 10px 25px rgba(37,99,235,0.25);
+        }
+
+        .timer-box i{
+            font-size:28px;
+            margin-bottom:10px;
+            display:block;
+        }
+
+        .timer-label{
+            font-size:14px;
+            opacity:0.9;
+            margin-bottom:10px;
+        }
+
+        #timer{
+            font-size:32px;
+            font-weight:bold;
+            letter-spacing:2px;
+        }
+
+        /* QUESTION GRID */
+
+        .question-grid{
+            display:grid;
+            grid-template-columns:repeat(5,1fr);
+            gap:12px;
+            margin-bottom:30px;
+        }
+
+        .q-btn{
+            width:45px;
+            height:45px;
+            border:none;
+            border-radius:14px;
+            background:#eef2ff;
+            color:#2563eb;
+            font-weight:700;
+            cursor:pointer;
+            transition:0.3s;
+            text-decoration:none;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:15px;
+        }
+
+        .q-btn:hover{
+            transform:translateY(-3px);
+            background:#2563eb;
+            color:#fff;
+        }
+
+        .q-btn.active{
+            background:#2563eb;
+            color:#fff;
+        }
+
+        /* ANSWERED = GREEN */
+
+        .q-btn.answered{
+            background:#16a34a !important;
+            color:#fff !important;
+        }
+
+        /* REVIEW = RED */
+
+        .q-btn.review{
+            background:#dc2626 !important;
+            color:#fff !important;
+        }
+
+        /* CONTENT */
+
+        .content{
+            flex:1;
+            padding:40px;
+        }
+
+        .exam-header{
+            background:linear-gradient(135deg,#2563eb,#4f46e5);
+            color:#fff;
+            padding:35px;
+            border-radius:24px;
+            margin-bottom:30px;
+            box-shadow:0 15px 35px rgba(37,99,235,0.2);
+        }
+
+        .exam-header h1{
+            font-size:34px;
+            margin-bottom:10px;
+        }
+
+        .question-box{
+            background:#fff;
+            border-radius:24px;
+            padding:30px;
+            margin-bottom:25px;
+            box-shadow:0 10px 30px rgba(0,0,0,0.05);
+            border:1px solid #edf0f5;
+            display:none;
+            animation:fadeIn 0.4s ease;
+        }
+
+        .question-box.active{
+            display:block;
+        }
+
+        @keyframes fadeIn{
+            from{
+                opacity:0;
+                transform:translateY(10px);
+            }
+            to{
+                opacity:1;
+                transform:translateY(0);
+            }
+        }
+
+        .question-number{
+            display:inline-block;
+            background:#eef2ff;
+            color:#2563eb;
+            padding:8px 16px;
+            border-radius:999px;
+            font-size:14px;
+            font-weight:700;
+            margin-bottom:18px;
+        }
+
+        .question-title{
+            font-size:24px;
+            font-weight:700;
+            line-height:1.5;
+            margin-bottom:25px;
+            color:#111827;
+        }
+
+        /* OPTIONS */
+
+        .option{
+            margin-bottom:18px;
+        }
+
+        .option label{
+            display:flex;
+            align-items:center;
+            gap:15px;
+            padding:18px;
+            background:#f9fafb;
+            border:2px solid transparent;
+            border-radius:18px;
+            cursor:pointer;
+            transition:0.3s;
+        }
+
+        .option label:hover{
+            border-color:#2563eb;
+            background:#eef2ff;
+            transform:translateY(-2px);
+        }
+
+        .option input[type="radio"]{
+            transform:scale(1.3);
+            cursor:pointer;
+            accent-color:#2563eb;
+        }
+
+        /* BUTTONS */
+
+        .submit-area{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            gap:15px;
+            margin-top:35px;
+            flex-wrap:wrap;
+        }
+
+        .submit-btn{
+            border:none;
+            padding:16px 30px;
+            border-radius:16px;
+            font-size:15px;
+            font-weight:700;
+            cursor:pointer;
+            transition:0.3s;
+            min-width:160px;
+        }
+
+        .btn-primary{
+            background:linear-gradient(135deg,#2563eb,#4f46e5);
+            color:#fff;
+            box-shadow:0 10px 20px rgba(37,99,235,0.2);
+        }
+
+        .btn-primary:hover{
+            transform:translateY(-2px);
+        }
+
+        .btn-light{
+            background:#eef2ff;
+            color:#2563eb;
+        }
+
+        .btn-light:hover{
+            background:#dbeafe;
+        }
+
+        .empty{
+            background:#fff;
+            padding:40px;
+            border-radius:20px;
+            text-align:center;
+            color:red;
+            font-size:20px;
+        }
+
+        .question-info{
+            margin-top:20px;
+            padding:15px;
+            background:#fff;
+            border-radius:10px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .info-item{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            margin-bottom:10px;
+            font-size:14px;
+            font-weight:600;
+            color:#333;
+        }
+
+        .info-color{
+            width:18px;
+            height:18px;
+            border-radius:50%;
+            display:inline-block;
+        }
+
+        /* ANSWERED = GREEN */
+
+        .answered{
+            background:green;
+        }
+
+        /* REVIEW = RED */
+
+        .review{
+            background:red;
+        }
+
+        @media(max-width:900px){
+
+            .exam-layout{
+                flex-direction:column;
+            }
+
+            .sidebar{
+                width:100%;
+                height:auto;
+                position:relative;
+            }
+
+            .content{
+                padding:20px;
+            }
+
+            .submit-area{
+                justify-content:center;
+            }
+
+            .submit-btn{
+                width:100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+<body>
+
+<div class="exam-layout">
+
+    <!-- SIDEBAR -->
+
+    <div class="sidebar">
+
+        <div class="timer-box">
+            <i class="bi bi-stopwatch-fill"></i>
+            <div class="timer-label">Remaining Time</div>
+            <div id="timer">{{ exam.duration_minutes }}:00</div>
+        </div>
+
+        <!-- QUESTION BUTTONS -->
+
+        <div class="question-grid">
+
+            {% for question in questions %}
+
+                <a href="javascript:void(0)"
+                   class="q-btn {% if forloop.first %}active{% endif %}"
+                   onclick="showQuestion({{ forloop.counter0 }})"
+                   id="qbtn{{ forloop.counter0 }}">
+
+                    {{ forloop.counter }}
+
+                </a>
+
+            {% endfor %}
+
+        </div>
+
+        <hr>
+
+        <div class="question-info">
+
+            <div class="info-item">
+                <span class="info-color answered"></span>
+                <span>ANSWERED</span>
+            </div>
+
+            <div class="info-item">
+                <span class="info-color review"></span>
+                <span>REVIEW</span>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- CONTENT -->
+
+    <div class="content">
+
+        <div class="exam-header">
+            <h1>{{ exam.title }}</h1>
+            <p>Total Questions : {{ questions|length }}</p>
+        </div>
+
+        {% if questions %}
+
+        <form method="POST"
+              id="examForm"
+                 action="{% url 'student_start_exam' exam.id %}">
+
+            {% csrf_token %}
+
+            {% for question in questions %}
+
+            <div class="question-box {% if forloop.first %}active{% endif %}"
+                 id="question{{ forloop.counter0 }}">
+
+                <div class="question-number">
+                    Question {{ forloop.counter }}
+                </div>
+
+                <div class="question-title">
+                    <div class="question-title">
+                        {{ question.question_text }}
+                    </div>
+                </div>
+
+                {% for option in question.options.all %}
+
+                <div class="option">
+
+                    <label>
+
+                        <input type="radio"
+                               name="question_{{ question.id }}"
+                               value="{{ option.id }}"
+                               onchange="markAnswered({{ forloop.parentloop.counter0 }})">
+
+                        {{ option.option_text }}
+
+                    </label>
+
+                </div>
+
+                {% endfor %}
+
+                <!-- ALL BUTTONS IN ONE ROW -->
+
+                <div class="submit-area">
+
+                    {% if not forloop.first %}
+
+                    <button type="button"
+                            class="submit-btn btn-light"
+                            onclick="prevQuestion({{ forloop.counter0 }})">
+
+                        <i class="bi bi-arrow-left"></i>
+                        Previous
+
+                    </button>
+
+                    {% endif %}
+
+                    <button type="button"
+                            class="submit-btn btn-light"
+                            onclick="toggleReview({{ forloop.counter0 }})">
+
+                        <i class="bi bi-bookmark-star-fill"></i>
+                        Review
+
+                    </button>
+
+                    {% if not forloop.last %}
+
+                    <button type="button"
+                            class="submit-btn btn-primary"
+                            onclick="nextQuestion({{ forloop.counter0 }})">
+
+                        Next
+                        <i class="bi bi-arrow-right"></i>
+
+                    </button>
+
+                    {% else %}
+
+                    <button type="submit"
+                            class="submit-btn btn-primary">
+
+                        <i class="bi bi-check-circle-fill"></i>
+                        Submit Exam
+
+                    </button>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </form>
+
+        {% else %}
+
+        <div class="empty">
+            No questions added to this exam.
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script>
+
+    const questionBoxes = document.querySelectorAll('.question-box');
+    const questionButtons = document.querySelectorAll('.q-btn');
+
+    /* SHOW QUESTION */
+
+    function showQuestion(index){
+
+        questionBoxes.forEach(box => {
+            box.classList.remove('active');
+        });
+
+        questionButtons.forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        questionBoxes[index].classList.add('active');
+        questionButtons[index].classList.add('active');
+
+    }
+
+    /* NEXT */
+
+    function nextQuestion(index){
+
+        showQuestion(index + 1);
+
+    }
+
+    /* PREVIOUS */
+
+    function prevQuestion(index){
+
+        showQuestion(index - 1);
+
+    }
+
+    /* MARK ANSWERED */
+
+    function markAnswered(index){
+
+    const btn = document.getElementById('qbtn' + index);
+
+    // Remove review status
+    btn.classList.remove('review');
+
+    // Mark as answered (green)
+    btn.classList.add('answered');
+
+}
+
+    /* MARK REVIEW */
+
+   function toggleReview(index){
+
+    const btn = document.getElementById('qbtn' + index);
+
+    // If already in review, remove review and make it answered (green)
+    if(btn.classList.contains('review')){
+
+        btn.classList.remove('review');
+        btn.classList.add('answered');
+
+    }else{
+
+        // Remove answered status and make review (red)
+        btn.classList.remove('answered');
+        btn.classList.add('review');
+
+    }
+
+}
+
+    /* TIMER */
+
+    let totalTime = {{ exam.duration_minutes }} * 60;
+
+const timer = document.getElementById('timer');
+
+const countdown = setInterval(() => {
+
+    let minutes = Math.floor(totalTime / 60);
+    let seconds = totalTime % 60;
+
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    seconds = seconds < 10 ? '0' + seconds : seconds;
+
+    timer.innerHTML = minutes + ':' + seconds;
+
+    /* TIMER RED WHEN 5 MINUTES LEFT */
+
+    if (totalTime <= 300) {
+
+        document.querySelector('.timer-box').style.background =
+            'linear-gradient(135deg,#dc2626,#ef4444)';
+
+    }
+
+    /* AUTO SUBMIT */
+
+    if (totalTime <= 0) {
+
+        clearInterval(countdown);
+
+        alert('Time is over!');
+
+        // Automatically submit the exam
+        document.getElementById('examForm').submit();
+
+        return;
+    }
+
+    totalTime--;
+
+}, 1000);
+</script>
+
+
+
+<script>
+
+document.getElementById('examForm').addEventListener('submit', function(e){
+
+    e.preventDefault();
+
+    /* SHOW SUCCESS POPUP */
+
+    const popup = document.createElement('div');
+
+    popup.innerHTML = `
+        <div id="successPopup" style="
+            position:fixed;
+            top:20px;
+            right:20px;
+            background:#16a34a;
+            color:#fff;
+            padding:18px 28px;
+            border-radius:14px;
+            font-size:16px;
+            font-weight:600;
+            z-index:9999;
+            box-shadow:0 10px 25px rgba(0,0,0,0.2);
+            animation:slideIn 0.4s ease;
+        ">
+            <i class="bi bi-check-circle-fill"></i>
+            Exam Submitted Successfully!
+        </div>
+
+        <style>
+            @keyframes slideIn{
+                from{
+                    opacity:0;
+                    transform:translateX(100px);
+                }
+                to{
+                    opacity:1;
+                    transform:translateX(0);
+                }
+            }
+        </style>
+    `;
+
+    document.body.appendChild(popup);
+
+    /* SUBMIT FORM AFTER 1 SECOND */
+
+    setTimeout(() => {
+
+        e.target.submit();
+
+    }, 1000);
+
+});
+
+</script>
+
+<script>
+const FACE_SCOPE_URL = "http://localhost:5000";
+const FACE_SCOPE_STUDENT_ID = 0; // Must match a key in server.py's STUDENTS dict
+
+async function reportViolation(type, detail) {
+  try {
+    const response = await fetch(
+      `${FACE_SCOPE_URL}/api/event/${FACE_SCOPE_STUDENT_ID}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, detail }),
+        keepalive: true
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Face Scope rejected the event:", response.status);
+    }
+  } catch (error) {
+    console.error("Could not reach Face Scope:", error);
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    reportViolation("TAB_SWITCH", "Student switched away from the exam tab");
+  } else {
+    alert("Warning: tab switching has been recorded.");
+  }
+});
+
+window.addEventListener("blur", () => {
+  if (document.visibilityState === "visible") {
+    reportViolation("WINDOW_BLUR", "Student moved focus away from the exam window");
+  }
+});
+</script>
+
+<video id="proctorVideo" autoplay playsinline muted style="display:none"></video>
+<canvas id="proctorCanvas" style="display:none"></canvas>
+
+<script>
+    async function startProctoringCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 1280, height: 720, facingMode: "user" },
+      audio: false
+    });
+
+    const video = document.getElementById("proctorVideo");
+    const canvas = document.getElementById("proctorCanvas");
+    video.srcObject = stream;
+
+    video.onloadedmetadata = () => {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      uploadProctorFrame();
+    };
+  } catch (error) {
+    console.error("Camera permission failed:", error);
+    alert("Camera access is required for proctoring.");
+  }
+}
+
+function uploadProctorFrame() {
+  const video = document.getElementById("proctorVideo");
+  const canvas = document.getElementById("proctorCanvas");
+  const context = canvas.getContext("2d");
+
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  canvas.toBlob(async (blob) => {
+    if (blob) {
+      await fetch(
+        `${FACE_SCOPE_URL}/browser_frame/${FACE_SCOPE_STUDENT_ID}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "image/jpeg" },
+          body: blob
+        }
+      ).catch(console.error);
+    }
+
+    setTimeout(uploadProctorFrame, 600);
+  }, "image/jpeg", 0.85);
+}
+
+startProctoringCamera();
+</script>
+
+<script>
+const shownPhoneWarnings = new Set();
+let phoneWarningReady = false;
+
+function showPhoneWarning() {
+  const warning = document.createElement("div");
+
+  warning.style.cssText = `
+    position:fixed; inset:0; z-index:10000;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.55);
+  `;
+
+  warning.innerHTML = `
+    <div style="
+      width:min(420px,90vw); padding:32px; border-radius:16px;
+      text-align:center; color:#fff; background:#b91c1c;
+    ">
+      <div style="font-size:48px;">📵</div>
+      <h2>Phone Detected</h2>
+      <p>This incident has been recorded.</p>
+      <button id="closePhoneWarning" style="
+        padding:10px 20px; border:0; border-radius:8px;
+        font-weight:bold; cursor:pointer;
+      ">I Understand</button>
+    </div>
+  `;
+
+  document.body.appendChild(warning);
+  document.getElementById("closePhoneWarning").onclick = () => warning.remove();
+}
+
+async function checkPhoneWarnings() {
+  try {
+    const response = await fetch(`${FACE_SCOPE_URL}/api/status`);
+    if (!response.ok) return;
+
+    const data = await response.json();
+
+    const phoneEvents = (data.global_violations || []).filter(event =>
+      event.student_id === FACE_SCOPE_STUDENT_ID &&
+      event.type === "PHONE_DETECTED"
+    );
+
+    // First request: save old events without displaying warnings.
+    if (!phoneWarningReady) {
+      phoneEvents.forEach(event => {
+        shownPhoneWarnings.add(
+          `${event.student_id}-${event.type}-${event.time}-${event.detail}`
+        );
+      });
+      phoneWarningReady = true;
+      return;
+    }
+
+    // Later requests: show a warning only for a newly created event.
+    phoneEvents.forEach(event => {
+      const key = `${event.student_id}-${event.type}-${event.time}-${event.detail}`;
+
+      if (!shownPhoneWarnings.has(key)) {
+        shownPhoneWarnings.add(key);
+        showPhoneWarning();
+      }
+    });
+  } catch (error) {
+    console.error("Cannot read proctoring status:", error);
+  }
+}
+
+checkPhoneWarnings();
+setInterval(checkPhoneWarnings, 1000);
+</script>
+
+</body>
+</html>
+

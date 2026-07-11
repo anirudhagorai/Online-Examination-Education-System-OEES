@@ -1,0 +1,169 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Poppins:ital,wght@0,100;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Saira:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <link rel="icon" type="image/x-icon" href="{% static 'assets/images/favicon.ico'%}">
+  <link rel="stylesheet" href="{% static 'assets/css/admin_account.css' %}">
+  <title>EduExam - {% block title %}Admin{% endblock %}</title>
+</head>
+<body>
+  
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img class="logo-icon" src="{% static 'assets/images/logo.png' %}" alt="logo" href="{% url 'admin_dashboard' %}">
+      <div class="logo-text">
+        <span class="logo-title">EduExam</span>
+        <span class="logo-sub">Administration</span>
+      </div>
+    </div>
+
+    <!-- Avatar + Name + Role -->
+    <div class="sidebar-user">
+      <div class="avatar avatar-lg avatar-{{ role|default:'admin' }}">
+        {{ request.user.first_name.0|upper|default:request.user.username.0|upper }}
+      </div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-name">
+          {{ fullname|default:request.user.username }}
+        </div>
+        <div class="sidebar-user-role">
+          <span class="role-badge {{ role|default:'student' }}">
+            <span class="material-symbols-outlined">
+              {% if role == 'admin' %}admin_panel_settings
+              {% endif %}
+            </span>
+            {{ role|default:'admin'|capfirst }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      
+      <div class="nav-group">
+        <div class="nav-group-label">Main</div>
+
+        <a class="nav-item {% if active_page == 'dashboard' %}active{% endif %}" href="{% url 'admin_dashboard' %}">
+          <span class="material-symbols-outlined">dashboard</span>Dashboard
+        </a>
+
+        <a class="nav-item {% if active_page == 'analytics' %}active{% endif %}" href="{% url 'admin_analytics' %}">
+          <span class="material-symbols-outlined">bar_chart</span>Analytics
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Management</div>
+        <a class="nav-item {% if active_page == 'users' %}active{% endif %}" href="{% url 'admin_users' %}">
+          <span class="material-symbols-outlined">group</span>Users
+          {% if pending_users_count %}
+          <span class="nav-badge">{{ pending_users_count }}</span>
+          {% endif %}
+        </a>
+
+        <a class="nav-item {% if active_page == 'teachers' %}active{% endif %}" href="{% url 'admin_teachers' %}">
+          <span class="material-symbols-outlined">person_pin</span>Teachers
+        </a>
+
+        <a class="nav-item {% if active_page == 'students' %}active{% endif %}" href="{% url 'admin_students' %}">
+          <span class="material-symbols-outlined">school</span>Students
+        </a>
+
+        <a class="nav-item {% if active_page == 'courses' %}active{% endif %}" href="{% url 'admin_courses' %}">
+          <span class="material-symbols-outlined">menu_book</span>Courses
+        </a>
+
+        <a class="nav-item {% if active_page == 'examinations' %}active{% endif %}" href="{% url 'admin_examinations' %}">
+          <span class="material-symbols-outlined">quiz</span>Examinations
+        </a>
+
+        <a class="nav-item {% if active_page == 'results' %}active{% endif %}" href="{% url 'admin_results' %}">
+          <span class="material-symbols-outlined">grade</span>Results
+        </a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">Communication</div>
+
+        <a class="nav-item {% if active_page == 'annnouncements' %}active{% endif %}" href="{% url 'admin_announcements' %}">
+          <span class="material-symbols-outlined">campaign</span>Announcements
+        </a>
+
+        <a class="nav-item {% if active_page == 'messages' %}active{% endif %}" href="{% url 'admin_messages' %}">
+          <span class="material-symbols-outlined">forum</span>Messages
+          {% if unread_messages %}
+          <span class="nav-badge">{{ unread_messages }}</span>
+          {% endif %}
+        </a>
+      </div>
+
+      <!-- System -->
+      <div class="nav-group">
+        <div class="nav-group-label">System</div>
+        <a class="nav-item {% if active_page == 'reports' %}active{% endif %}" href="{% url 'admin_reports' %}">
+          <span class="material-symbols-outlined">summarize</span>Reports
+        </a>
+
+
+        <a class="nav-item {% if active_page == 'profile' %}active{% endif %}" href="{% url 'admin_profile' %}">
+          <span class="material-symbols-outlined">manage_accounts</span>My Profile
+        </a>
+      </div>
+     
+    </nav>
+
+    <div class="sidebar-footer">
+      <a class="nav-item logout" href="#" onclick="confirmLogout(event)">
+        <span class="material-symbols-outlined">logout</span>Sign out
+      </a>
+
+      <!-- Confirmation Modal -->
+      <div class="modal-overlay" id="logoutModal">
+        <div class="logout-modal">
+          <span class="material-symbols-outlined">logout</span>
+          <h3>Logout?</h3>
+          <p>Are you sure you want to logout?</p>
+          <div class="cancel">
+            <button onclick="closeLogout()">Cancel</button>
+            <form method="POST" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit">Yes, Sign out</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Overlay -->
+  <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- ====MAIN==== -->
+  <div class="main">
+
+    <!-- Top-bar -->
+     <header class="top-bar">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <span class="material-symbols-outlined">density_medium</span>
+      </button>
+      <span class="topbar-title">{% block page_title %}{% endblock %}</span>
+    </header>
+
+    <main class="content">
+      {% block content %}
+      {% endblock %}
+    </main>
+
+    <footer class="footer">EduExam &copy; 2026</footer>
+  </div>
+
+  <script src="{% static '/assets/js/admin_account.js' %}"></script>  
+</body>
+</html>

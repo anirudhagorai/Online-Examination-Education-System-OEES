@@ -1,0 +1,106 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+  <link rel="icon" type="image/x-icon" href="{% static 'assets/images/favicon.ico'%}">
+  <link rel="stylesheet" href="{% static 'assets/css/verify_otp.css' %}">
+  <title>OTP Verification</title>
+</head>
+<body>
+  <div class="box">
+    
+    <!-- Icon changes based on centext -->
+    {% if is_forgot_password %}
+    <div class="icon-circle green">
+      <span class="material-symbols-outlined">lock_reset</span>
+    </div>
+    {% else %}
+    <div class="icon-circle blue">
+      <span class="material-symbols-outlined">mark_email_read</span>
+    </div>
+    {% endif %}
+
+    <h2>Verify OTP</h2>
+    <p class="subtitle">
+      We sent a 6-digit code to your email. <br>
+      Enter it below to continue
+    </p>
+
+    <!-- Steps Indicator -->
+    <div class="steps">
+      <div class="step done">
+        <div class="step-circle done">
+          <span class="material-symbols-outlined" style="font-size:14px;">check</span>
+        </div>
+        <div class="step-label">{% if is_forgot_password %}Email{% else %}Register{% endif %}</div>
+      </div>
+      <div class="step-line done"></div>
+      <div class="step active">
+        <div class="step-circle" active>2</div>
+        <div class="step-label">Verify OTP</div>
+      </div>
+      {% if is_forgot_password %}
+      <div class="step-line pending"></div>
+      <div class="step">
+        <div class="step-circle pending">3</div>
+        <div class="step-label">New Password</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Message box -->
+    <div class="msg-box" id="msgBox">
+      <span class="material-symbols-outlined" style="font-size: 18px;" id="msgIcon">info</span>
+      <span id="msgText"></span>
+    </div>
+
+    <!-- OTP Input boxes -->
+    <div class="otp-group" id="otpGroup">
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp1" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp2" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp3" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp4" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp5" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp6" />
+    </div>
+
+    <!-- Countdown timer -->
+    <div class="timer-row">
+      <span class="material-symbols-outlined" style="font-size: 16px;">timer</span>
+      OTP expires in
+      <span class="timer-val" id="timerVal">02:00</span>
+    </div>
+
+    <!-- Attempts info -->
+    <div class="attempts-info" id="attemptsInfo"></div>
+
+    <!-- Verify button -->
+    <button class="btn-verify" id="verifyBtn" onclick="verifyOtp()" disabled>
+      <span class="material-symbols-outlined" style="font-size: 18px;">verified</span>
+      Verify OTP
+    </button>
+
+    <!-- Resend button -->
+    <button class="btn-resend" id="resendBtn" onclick="resendOtp()" disabled>
+      <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span>
+      Resend OTP
+    </button>
+
+    <a href="{% if is_forgot_password %}{% url 'forgot_password' %}{% else %}{% url 'home' %}{% endif %}" class="back-link">
+      <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+      {% if is_forgot_password %}Back to Forgot Password{% else %}Back to Home{% endif %}
+    </a>
+    
+  </div>
+  <script>
+    const USERNAME = "{{ username }}";
+    const IS_FORGOT = {% if is_forgot_password %}true{% else %}false{% endif %};
+  </script>
+
+  <script src="{% static 'assets/js/verify_otp.js' %}"></script>
+
+</body>
+</html>

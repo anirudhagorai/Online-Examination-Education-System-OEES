@@ -1,0 +1,324 @@
+{% extends 'core/teacher_base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+
+{% block content %}
+
+<!-- Welcome Banner -->
+<div class="welcome-banner">
+  <div class="wb-text">
+    <h2>Good {{ time_of_day }}, {{ teacher.first_name|default:teacher.username }}!</h2>
+    <p>You have <strong style="color: #fff;">{{ pending_submissions }}</strong> pending submissions and <strong style="color: #fff;">{{ upcoming_exams_count }}</strong> upcoming exams this week. </p>
+  </div>
+  <div class="wb-actions">
+    <a href="{% url 'teacher_courses' %}" class="wb-btn white">
+      <span class="material-symbols-outlined">add</span>
+      New Course
+    </a>
+    <a href="{% url 'teacher_examinations' %}" class="wb-btn white">
+      <span class="material-symbols-outlined">assignment_add</span>
+      New Exam
+    </a>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="stats-grid" style="margin-bottom: 20px;">
+  <div class="stat-card">
+    <div class="stat-icon blue">
+      <span class="material-symbols-outlined">menu_book</span>
+    </div>
+    <div class="stat-val">{{ total_courses }}</div>
+    <div class="stat-lbl">Total Courses</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green">
+      <span class="material-symbols-outlined">group</span>
+    </div>
+    <div class="stat-val">{{ total_students }}</div>
+    <div class="stat-lbl">Total students</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon orange">
+      <span class="material-symbols-outlined">assignment</span>
+    </div>
+    <div class="stat-val">{{ total_exams }}</div>
+    <div class="stat-lbl">Total Exams</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple">
+      <span class="material-symbols-outlined">pending_actions</span>
+    </div>
+    <div class="stat-val">{{ pending_submissions }}</div>
+    <div class="stat-lbl">Pending Reviews</div>
+  </div>
+</div>
+
+<!-- Dashboard Grid -->
+<div class="dashboard-grid">
+
+  <!-- Left -->
+  <div class="dashboard-left">
+
+    <!-- Recent Courses -->
+    <div class="section-card">
+      <div class="section-head">
+        <h3>My Courses</h3>
+        <a href="{% url 'teacher_courses' %}">View all
+          <span class="material-symbols-outlined" style="font-size: 14px;">arrow_forward</span>
+        </a>
+      </div>
+      <div class="course-list">
+        {% for course in recent_courses %}
+        <a href="{% url 'teacher_courses' %}" class="course-row">
+          <div class="cr-thumb">
+            {% if course.youtube_id %}
+            <img src="https://img.youtube.com/vi/{{ course.youtube_id }}/mqdefault.jpg" alt="{{ course.name }}"/>
+            {% else %}
+            <div style="width: 100%;height: 100%;background: linear-gradient(135deg,#1c5ebc,#3a77d4);display: flex;align-items: center;justify-content: center;">
+              <span class="material-symbols-outlined" style="color: rgba(255, 255, 255, .5);font-size: 18px;">play_circle</span>
+            </div>
+            {% endif %}
+          </div>
+          <div class="cr-info">
+            <div class="cr-name">{{ course.name }}</div>
+            <div class="cr-meta">{{ course.students.count }} students : {{ course.total_videos|default:0 }} videos</div>
+          </div>
+          <div class="cr-prog">
+            <div class="cr-prog-label">
+              <span>Avg</span>
+              <span>{% widthratio course.avg_progress|default:0 1 1 %}</span>
+            </div>
+            <div class="cr-prog-track">
+              <div class="cr-prog-fill" style="width:{{ course.avg_progress|default:0 }}%"></div>
+            </div>
+          </div>
+          <span class="badge badge-blue" style="flex-shrink: 0;">{{ course.status|capfirst }}</span>
+        </a>
+        {% empty %}
+        <div class="empty-state">
+          <span class="material-symbols-outlined">menu_book</span>
+          <h3>No courses yet</h3>
+          <p>Create your first course to get started.</p>
+          <a href="{% url 'teacher_courses' %}" class="btn btn-primary">
+            <span class="material-symbols-outlined">add</span> Create Course
+          </a>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Recent Exams -->
+    <div class="section-card">
+      <div class="section-head">
+        <h3>Recent Exams</h3>
+        <a href="{% url 'teacher_examinations' %}">View all
+          <span class="material-symbols-outlined" style="font-size:14px;">arrow_forward</span>
+        </a>
+      </div>
+      <div class="exam-list">
+        {% for exam in recent_exams %}
+        <div class="exam-row">
+          <div class="exam-icon
+            {% if exam.status == 'ongoing' %}
+              stat-icon green
+            {% elif exam.status == 'upcoming' %}
+              stat-icon blue
+            {% elif exam.status == 'completed' %}
+              stat-icon purple
+            {% else %}
+              stat-icon orange
+            {% endif %}">
+            <span class="material-symbols-outlined">assignment</span>
+          </div>
+          <div class="exam-info">
+            <div class="exam-name">{{ exam.title }}</div>
+            <div class="exam-meta">{{ exam.course.name }} : {{ exam.total_questions }} questions : {{ exam.duration }} mins</div>
+          </div>
+          <span class="badge
+            {% if exam.status == 'ongoing' %}
+              badge-green
+            {% elif exam.status == 'upcoming' %}
+              badge-blue
+            {% elif exam.status == 'completed' %}
+              badge-gray
+            {% else %}
+              badge-orange
+            {% endif %}">
+            {{ exam.status|capfirst }}
+          </span>
+        </div>
+        {% empty %}
+        <div style="padding: 30px;text-align: center;color: #9ca3af;font-size: 13px;">
+          <span class="material-symbols-outlined" style="font-size: 36px;display: block;margin-bottom: 8px;">assignment</span>
+          No exams created yet.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="section-card">
+      <div class="section-head">
+        <h3>Recent Students</h3>
+        <a href="{% url 'teacher_students' %}">View all
+          <span class="material-symbols-outlined" style="font-size: 14px;">arrow_forward</span>
+        </a>
+      </div>
+      <div class="table-wrap" style="border: none;border-radius: 0;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Enrolled In</th>
+              <th>Progress</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in recent_students %}
+            <tr>
+              <td>
+                <div style="display: flex;align-items: center;gap:9px;">
+                  <div style="width: 32px;height: 32px;border-radius: 50%;background: #e8f0fb;display: flex;align-items: center;justify-content: center;font-size: 12px;font-weight: 700;color: #1c5ebc;flex-shrink: 0;">
+                    {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+                  </div>
+                  <div>
+                    <div style="font-size: 13px;font-weight: 600;">{{ student.get_full_name }}</div>
+                    <div style="font-size: 11px;color: #9ca3af;">{{ student.email }}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size: 12px;color: #6b7280;">{{ student.enrolled_courses.count }} courses</td>
+              <td>
+                <div style="display: flex;align-items: center;gap: 8px;">
+                  <div style="flex: 1;height: 5px;background: #e4e8f0;border-radius: 99px;overflow: hidden;min-width: 60px;">
+                    <div style="height: 100%;background: #1c5ebc;border-radius: 99px;width: {{ student.avg_progress|default:0 }}%"></div>
+                  </div>
+                  <span style="font-size: 11px;font-weight: 600;color: #1a1d2e;">{{ student.avg_progress|default:0 }}%</span>
+                </div>
+              </td>
+              <td><span class="badge badge-green">Active</span></td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4" style="text-align: center;padding: 24px;color: #9ca3af;font-size: 13px;">No students enrolled yet.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Dashboard Right -->
+  <div class="dashboard-right">
+
+    <!-- Quick Actions -->
+    <div class="section-card">
+      <div class="section-head"><h3>Quick Actions</h3></div>
+      <div class="quick-actions">
+        <a href="{% url 'teacher_courses' %}" class="qa-btn">
+          <span class="material-symbols-outlined">add_circle</span>
+          New Course
+        </a>
+        <a href="{% url 'teacher_examinations' %}" class="qa-btn">
+          <span class="material-symbols-outlined">assignment_add</span>
+          New Exam
+        </a>
+        <a href="{% url 'teacher_announcements' %}" class="qa-btn">
+          <span class="material-symbols-outlined">campaign</span>
+          Announce
+        </a>
+        <a href="{% url 'teacher_results' %}" class="qa-btn">
+          <span class="material-symbols-outlined">bar_chart</span>
+          Results
+        </a>
+      </div>
+    </div>
+
+    <!-- Overview Stats -->
+    <div class="section-card">
+      <div class="section-head"><h3>Overview</h3></div>
+      <div class="mini-stats">
+        <div>
+          <div class="mini-stat">
+            <div class="ms-label"><span class="material-symbols-outlined" style="color: #1c5ebc;">menu_book</span>Active Courses</div>
+            <div class="ms-val">{{ active_courses }}</div>
+          </div>
+          {% with total=total_courses|default:1 %}
+          <div class="ms-bar-wrap">
+            <div class="ms-track"><div class="ms-fill" style="width:{% widthratio active_courses total 100 %}%; background:#1c5ebc"></div></div>
+          </div>
+          {% endwith %}
+        </div>
+        <div class="mini-stat">
+          <div class="ms-label">
+            <span class="material-symbols-outlined" style="color: #2e9e6e;">assignment_turned_in</span> Exams Completed
+          </div>
+        </div>
+        {% with total=total_exams|default:1 %}
+        <div class="ms-bar-wrap">
+          <div class="ms-track"><div class="ms-fill" style="width:{% widthratio completed_exams total 100 %}%;background:#2e9e6e"></div></div>
+        </div>
+        {% endwith %}
+      </div>
+      <div>
+        <div class="mini-stat">
+          <div class="ms-label"><span class="material-symbols-outlined" style="color: #d97706;">campaign</span>Announcements</div>
+          <div class="ms-val">{{ announcements_count }}</div>
+        </div>
+      </div>
+    </div>
+    <!-- Top Students -->
+    <div class="section-card">
+      <div class="section-head">
+        <h3>Top Students</h3>
+        <a href="{% url 'teacher_students' %}">See all</a>
+      </div>
+      <div class="student-list">
+        {% for student in top_students %}
+        <div class="student-row">
+          <div class="s-rank {% if forloop.counter == 1 %}gold{% elif forloop.counter == 2 %}silver{% elif forloop.counter == 3 %}bronze{% endif %}">
+            {{ forloop.counter }}
+          </div>
+          <div class="s-avatar">
+            {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+          </div>
+          <div class="s-info">
+            <div class="s-name">{{ student.get_full_name }}</div>
+            <div class="s-score">{{ student.enrolled_courses.count }}</div>
+          </div>
+          <div class="s-badge">{{ student.avg_progress|default:0 }}%</div>
+        </div>
+        {% empty %}
+        <div style="padding: 20px;text-align: center;color: #9ca3af;font-size: 13px;">No data yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+  
+    <!-- Recent Activity -->
+    <div class="section-card">
+      <div class="section-head"><h3>Recent Activity</h3></div>
+      <div class="activity-list">
+        {% for activity in recent_activities %}
+        <div class="activity-item">
+          <div class="act-dot {{ activity.color|default:'blue' }}">
+            <span class="material-symbols-outlined">{{ activity.icon|default:'info' }}</span>
+          </div>
+          <div class="act-text">
+            <div class="act-msg">{{ activity.message }}</div>
+            <div class="act-time">{{ activity.time }}</div>
+          </div>
+        </div>
+        {% empty %}
+        <div style="padding: 20px;text-align: center;color: #9ca3af;font-size: 13px;">No recent activity.</div>
+        {% endfor %}
+      </div>
+    </div>    
+  </div>
+</div>
+
+{% endblock %}

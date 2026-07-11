@@ -1,0 +1,182 @@
+{% extends 'core/admin_base.html' %}
+{% block title %}Courses{% endblock %}
+{% block page_title %}Course Management{% endblock %}
+{% block breadcrumb %}Courses{% endblock %}
+
+{% block content %}
+
+<!-- Stats Cards -->
+<div class="sm-stats">
+  <div class="sm-stat">
+    <div class="sm-si orange"><span class="material-symbols-outlined">pending</span></div>
+    <div><div class="sm-sv">{{ total_pending|default:0 }}</div><div class="sm-sl">Pending Approval</div></div>
+  </div>
+  <div class="sm-stat">
+    <div class="sm-si green"><span class="material-symbols-outlined">check_circle</span></div>
+    <div><div class="sm-sv">{{ total_approved|default:0 }}</div><div class="sm-sl">Approved</div></div>
+  </div>
+  <div class="sm-stat">
+    <div class="sm-si red"><span class="material-symbols-outlined">block</span></div>
+    <div><div class="sm-sv">{{ total_rejected|default:0 }}</div><div class="sm-sl">Rejected</div></div>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="sm-tabs">
+  <button onclick="location.href='?tab=pending'" class="sm-tab {% if tab == 'pending' %}active{% endif %}">
+    <span class="material-symbols-outlined">pending</span> Pending
+  </button>
+  <button onclick="location.href='?tab=approved'" class="sm-tab {% if tab == 'approved' %}active{% endif %}">
+    <span class="material-symbols-outlined">check_circle</span> Approved
+  </button>
+  <button onclick="location.href='?tab=rejected'" class="sm-tab {% if tab == 'rejected' %}active{% endif %}">
+    <span class="material-symbols-outlined">block</span> Rejected
+  </button>
+</div>
+
+<!-- Toolbar -->
+<div class="sm-toolbar">
+  <div class="sm-search">
+    <span class="material-symbols-outlined sm-si3">search</span>
+    <input type="text" id="course-search" placeholder="Search course name or teacher..." value="{{ search|default:'' }}">
+  </div>
+  <a href="{% url 'admin_courses' %}" class="sm-btn-sec">
+    <span class="material-symbols-outlined">filter_alt_off</span> Clear
+  </a>
+</div>
+
+<!-- Main Card -->
+<div class="sm-card">
+  <div class="sm-card-head">
+    <h3>
+      {% if tab == 'pending' %}Pending Courses for Approval
+      {% elif tab == 'approved' %}Approved Courses
+      {% elif tab == 'rejected' %}Rejected Courses
+      {% else %}All Courses{% endif %}
+    </h3>
+  </div>
+
+  <div class="sm-tw">
+    <table class="sm-table">
+      <thead>
+        <tr>
+          <th>Course</th>
+          <th>Teacher</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th style="text-align:center; width:140px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for course in courses %}
+        <tr id="course-row-{{ course.id }}">
+          <td>
+            <div class="sm-uc">
+              <div class="sm-av course-av" style="background:#3b82f6;color:white;">
+                {{ course.name|slice:":1"|upper }}
+              </div>
+              <div>
+                <div class="sm-uname">{{ course.name }}</div>
+                <div class="sm-uemail">{{ course.description|truncatechars:70 }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <strong>{{ course.teacher.get_full_name|default:course.teacher.username }}</strong><br>
+            <small style="color:#64748b;">{{ course.teacher.email }}</small>
+          </td>
+          <td>
+            {% if course.status == 'approved' %}
+              <span class="sm-pill active">
+                <span class="material-symbols-outlined">check_circle</span>Approved
+              </span>
+            {% elif course.status == 'rejected' %}
+              <span class="sm-pill locked">
+                <span class="material-symbols-outlined">block</span>Rejected
+              </span>
+            {% else %}
+              <span class="sm-pill suspended">
+                <span class="material-symbols-outlined">pending</span>Pending
+              </span>
+            {% endif %}
+          </td>
+          <td>{{ course.created_at|date:"d M Y" }}</td>
+          <td>
+            <div class="sm-acts">
+              <button class="sm-abtn" title="View Details" onclick="acOpenDetail({{ course.id }})">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+
+              {% if course.status == 'pending' %}
+                <button class="sm-abtn" title="Approve" onclick="acApprove({{ course.id }})" style="color:#10b981;">
+                  <span class="material-symbols-outlined">check_circle</span>
+                </button>
+                <button class="sm-abtn" title="Reject" onclick="acOpenReject({{ course.id }}, '{{ course.name|escapejs }}')" style="color:#f59e0b;">
+                  <span class="material-symbols-outlined">block</span>
+                </button>
+              {% endif %}
+
+              <button class="sm-abtn del" title="Delete" onclick="acOpenDelete({{ course.id }}, '{{ course.name|escapejs }}')">
+                <span class="material-symbols-outlined">delete</span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" style="text-align:center; padding:80px 20px; color:#64748b;">
+            <span class="material-symbols-outlined" style="font-size:48px;">school</span>
+            <h4>No courses found</h4>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Quick View Panel -->
+<div class="sm-qv-overlay" id="ac-qv-overlay" onclick="acCloseDetail()"></div>
+<div class="sm-qv-panel" id="ac-qv-panel">
+  <div class="sm-qv-head">
+    <h3>Course Details</h3>
+    <button class="sm-qv-close" onclick="acCloseDetail()">✕</button>
+  </div>
+  <div class="sm-qv-body" id="ac-qv-body"></div>
+</div>
+
+<!-- Reject Modal -->
+<div class="sm-modal-bg" id="ac-reject-modal">
+  <div class="sm-modal med">
+    <div class="sm-mhead">
+      <h3>Reject Course</h3>
+      <button class="sm-mclose" onclick="acCloseReject()">✕</button>
+    </div>
+    <div class="sm-mbody">
+      <input type="hidden" id="ac-reject-id">
+      <p style="margin-bottom:12px;"><strong>Course:</strong> <span id="ac-reject-name"></span></p>
+      <textarea id="ac-reject-reason" class="sm-fc" rows="4" placeholder="Write reason for rejection..."></textarea>
+    </div>
+    <div class="sm-mfoot">
+      <button class="sm-cancel-btn" onclick="acCloseReject()">Cancel</button>
+      <button class="sm-submit-btn red" onclick="acExecReject()">Reject Course</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="sm-modal-bg" id="ac-del-modal">
+  <div class="sm-modal sm">
+    <div class="sm-mbody" style="text-align:center; padding:40px 30px;">
+      <span class="material-symbols-outlined" style="font-size:48px; color:#ef4444;">delete</span>
+      <h3 style="margin:15px 0 8px;">Delete this course?</h3>
+      <p id="ac-del-name" style="color:#64748b;"></p>
+      <div class="sm-mfoot">
+        <button class="sm-cancel-btn" onclick="acCloseDelete()">Cancel</button>
+        <button class="sm-submit-btn red" onclick="acExecDelete()">Yes, Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

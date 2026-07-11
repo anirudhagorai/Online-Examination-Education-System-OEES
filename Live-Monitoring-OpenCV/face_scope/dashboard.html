@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ProctorScope — Multi-Student Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Azeret+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN: Dense ops-room surveillance terminal
+   4-cell camera grid dominates; sidebar tracks all violations
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --bg:    #070809;
+  --s1:    #0c0e10;
+  --s2:    #111416;
+  --s3:    #181b1e;
+  --bd:    #1c2024;
+  --bd2:   #252b30;
+  --green: #00e87a;
+  --gd:    #00b85f;
+  --red:   #ff2040;
+  --ora:   #ff8800;
+  --blue:  #00aaff;
+  --purp:  #a855f7;
+  --yel:   #ffc800;
+  --txt:   #c5ccd6;
+  --mut:   #434d58;
+  --mut2:  #2a3038;
+  --mono:  'Azeret Mono', monospace;
+  --sans:  'Space Grotesk', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--txt);display:flex;flex-direction:column}
+
+/* scanlines */
+body::after{content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px);
+  pointer-events:none;z-index:9000}
+
+/* ── WARNING OVERLAY ───────────────────────────────────────── */
+#wov{display:none;position:fixed;inset:0;z-index:8000;
+  align-items:center;justify-content:center;
+  background:rgba(255,32,64,0.15);backdrop-filter:blur(6px)}
+#wov.show{display:flex}
+.wcard{background:var(--s1);border:2px solid var(--red);border-radius:10px;
+  padding:36px 48px;text-align:center;max-width:460px;
+  box-shadow:0 0 100px rgba(255,32,64,0.3);
+  animation:wpop .28s cubic-bezier(.34,1.56,.64,1)}
+@keyframes wpop{from{transform:scale(.84);opacity:0}to{transform:scale(1);opacity:1}}
+.w-stu{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;color:var(--mut);
+  text-transform:uppercase;margin-bottom:8px}
+.w-num{font-family:var(--mono);font-size:3rem;font-weight:500;color:var(--red);line-height:1;margin-bottom:3px}
+.w-lbl{font-family:var(--mono);font-size:.55rem;letter-spacing:.12em;color:var(--mut);margin-bottom:14px}
+.w-tit{font-size:1.25rem;font-weight:600;color:var(--red);margin-bottom:8px}
+.w-det{font-size:.84rem;color:var(--mut);line-height:1.6;margin-bottom:22px}
+.w-btn{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;
+  padding:9px 26px;background:var(--red);color:#fff;border:none;border-radius:5px;
+  cursor:pointer;transition:opacity .2s}
+.w-btn:hover{opacity:.82}
+
+/* ── TOPBAR ───────────────────────────────────────────────── */
+.topbar{height:48px;background:var(--s1);border-bottom:1px solid var(--bd);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;flex-shrink:0}
+.logo{font-family:var(--mono);font-size:.7rem;font-weight:500;letter-spacing:.18em;
+  color:var(--green);display:flex;align-items:center;gap:9px}
+.ldot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  animation:ldot 1.8s ease-in-out infinite}
+@keyframes ldot{0%,100%{box-shadow:0 0 0 0 rgba(0,232,122,.5)}50%{box-shadow:0 0 0 5px rgba(0,232,122,0)}}
+.top-mid{font-family:var(--mono);font-size:.55rem;letter-spacing:.12em;color:var(--mut)}
+.top-right{display:flex;align-items:center;gap:16px}
+#clock{font-family:var(--mono);font-size:.84rem;letter-spacing:.08em;color:var(--txt)}
+.sess{font-family:var(--mono);font-size:.55rem;color:var(--mut)}
+
+/* ── BODY LAYOUT ──────────────────────────────────────────── */
+.body{flex:1;display:grid;grid-template-columns:1fr 300px;overflow:hidden}
+
+/* ── MAIN AREA ────────────────────────────────────────────── */
+.main-area{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--bd)}
+
+/* ── 2×2 CAMERA GRID ─────────────────────────────────────── */
+.cam-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:1px;background:var(--bd);overflow:hidden}
+
+.cam-cell{background:#000;position:relative;overflow:hidden;display:flex;flex-direction:column}
+
+.cam-feed-wrap{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+
+.cam-img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* corner brackets */
+.cbrack{position:absolute;inset:0;pointer-events:none}
+.cb{position:absolute;width:18px;height:18px;border-style:solid;opacity:.5}
+.cb.tl{top:8px;left:8px;border-width:2px 0 0 2px}
+.cb.tr{top:8px;right:8px;border-width:2px 2px 0 0}
+.cb.bl{bottom:32px;left:8px;border-width:0 0 2px 2px}
+.cb.br{bottom:32px;right:8px;border-width:0 2px 2px 0}
+
+/* per-cell status bar at bottom */
+.cam-bar{height:30px;background:rgba(7,8,9,.85);border-top:1px solid var(--bd);
+  display:flex;align-items:center;justify-content:space-between;padding:0 10px;flex-shrink:0}
+.cb-name{font-family:var(--mono);font-size:.52rem;letter-spacing:.1em;color:var(--txt);font-weight:500}
+.cb-stats{display:flex;gap:10px}
+.cbs{font-family:var(--mono);font-size:.48rem;color:var(--mut);white-space:nowrap}
+.cbs span{color:var(--txt)}
+
+/* face state dot on cell */
+.cell-dot{width:8px;height:8px;border-radius:50%;position:absolute;top:10px;right:10px;z-index:10}
+.cell-dot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+.cell-dot.absent{background:var(--red);box-shadow:0 0 8px var(--red);animation:ablink .6s ease infinite alternate}
+.cell-dot.multi{background:var(--ora);box-shadow:0 0 8px var(--ora)}
+@keyframes ablink{from{opacity:1}to{opacity:.3}}
+
+/* student label badge */
+.cell-label{position:absolute;top:8px;left:8px;font-family:var(--mono);font-size:.52rem;
+  letter-spacing:.1em;padding:2px 7px;border-radius:2px;
+  background:rgba(7,8,9,.8);border:1px solid var(--bd2);color:var(--mut);z-index:10}
+
+/* violation countdown bars on cell */
+.cell-bars{position:absolute;bottom:30px;left:0;right:0;padding:0 8px 4px;z-index:10}
+.mini-bar{height:2px;border-radius:1px;margin-bottom:2px;width:0%;transition:width .5s ease}
+
+/* offline overlay */
+.cell-offline{position:absolute;inset:0;display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;background:#000}
+.cell-offline.show{display:flex}
+.cell-offline svg{opacity:.2}
+.cell-offline p{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;color:var(--mut)}
+
+/* ── STATS STRIP below camera grid ───────────────────────── */
+.stats-strip{height:64px;background:var(--s1);border-top:1px solid var(--bd);
+  display:grid;grid-template-columns:repeat(4,1fr);flex-shrink:0}
+.ss-card{border-right:1px solid var(--bd);padding:8px 12px;display:flex;flex-direction:column;justify-content:space-between}
+.ss-card:last-child{border-right:none}
+.ss-name{font-family:var(--mono);font-size:.5rem;letter-spacing:.1em;color:var(--mut);text-transform:uppercase}
+.ss-row{display:flex;align-items:baseline;gap:6px;margin-top:4px}
+.ss-val{font-family:var(--mono);font-size:1.1rem;font-weight:500;line-height:1}
+.ss-sub{font-family:var(--mono);font-size:.48rem;color:var(--mut)}
+.ss-dots{display:flex;gap:4px;margin-top:5px}
+.ss-dot{width:6px;height:6px;border-radius:50%}
+
+/* ── RIGHT SIDEBAR ────────────────────────────────────────── */
+.sidebar{display:flex;flex-direction:column;overflow:hidden;background:var(--s1)}
+.sb-head{padding:10px 14px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sb-title{font-family:var(--mono);font-size:.54rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.sb-badge{font-family:var(--mono);font-size:.48rem;padding:2px 7px;border-radius:2px;letter-spacing:.1em;
+  background:rgba(255,32,64,.12);color:var(--red);border:1px solid rgba(255,32,64,.25)}
+
+/* global violation counters */
+.gv-grid{padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.gvc{background:var(--s2);border:1px solid var(--bd);border-radius:4px;padding:8px 10px;text-align:center}
+.gvcn{font-family:var(--mono);font-size:1.25rem;font-weight:500;line-height:1}
+.gvcl{font-family:var(--mono);font-size:.46rem;letter-spacing:.1em;color:var(--mut);margin-top:3px;text-transform:uppercase}
+
+/* violation log */
+#vlog{flex:1;overflow-y:auto;padding:4px 0}
+#vlog::-webkit-scrollbar{width:2px}
+#vlog::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:1px}
+
+.ve{padding:8px 12px;border-bottom:1px solid var(--bd);display:grid;grid-template-columns:auto 1fr;gap:7px;align-items:start;animation:vein .25s ease;cursor:default;transition:background .15s}
+.ve:hover{background:var(--s2)}
+@keyframes vein{from{opacity:0;transform:translateX(6px)}to{opacity:1;transform:none}}
+.vstu{font-family:var(--mono);font-size:.5rem;letter-spacing:.08em;color:var(--mut);margin-bottom:2px}
+.vpill{font-family:var(--mono);font-size:.46rem;letter-spacing:.1em;padding:2px 5px;border-radius:2px;white-space:nowrap}
+.pt{background:rgba(255,32,64,.14);color:var(--red);border:1px solid rgba(255,32,64,.28)}
+.po{background:rgba(255,136,0,.14);color:var(--ora);border:1px solid rgba(255,136,0,.28)}
+.pg{background:rgba(0,232,122,.1);color:var(--gd);border:1px solid rgba(0,232,122,.2)}
+.vd{font-size:.68rem;color:var(--txt);line-height:1.4}
+.vt{font-family:var(--mono);font-size:.5rem;color:var(--mut);margin-top:1px}
+.empty-log{text-align:center;padding:28px 14px;font-family:var(--mono);font-size:.58rem;color:var(--mut2);letter-spacing:.1em;line-height:2}
+
+.clr{margin:6px 10px;padding:7px;background:var(--s2);border:1px solid var(--bd2);border-radius:3px;
+  color:var(--mut);font-family:var(--mono);font-size:.52rem;letter-spacing:.1em;cursor:pointer;
+  width:calc(100% - 20px);transition:all .2s;flex-shrink:0}
+.clr:hover{border-color:var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+
+<!-- WARNING OVERLAY -->
+<div id="wov">
+  <div class="wcard">
+    <div class="w-stu" id="w-stu">Student 1</div>
+    <div class="w-num" id="w-num">1</div>
+    <div class="w-lbl">Total Violations</div>
+    <div class="w-tit" id="w-tit">Violation Detected</div>
+    <div class="w-det" id="w-det">Details here</div>
+    <button class="w-btn" onclick="dismissW()">Acknowledge</button>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo"><div class="ldot"></div>PROCTORSCOPE</div>
+  <div class="top-mid">MULTI-STUDENT EXAM MONITORING — 4 CAMERAS</div>
+  <div class="top-right">
+    <div class="sess">SESSION <span id="sess" style="color:var(--txt)">00:00</span></div>
+    <div id="clock">--:--:--</div>
+  </div>
+</div>
+
+<!-- BODY -->
+<div class="body">
+
+  <!-- MAIN AREA -->
+  <div class="main-area">
+
+    <!-- 2×2 CAMERA GRID -->
+    <div class="cam-grid" id="cam-grid">
+
+      <!-- 4 camera cells — JS fills these -->
+      <div class="cam-cell" id="cell-0">
+        <div class="cam-feed-wrap">
+          <img class="cam-img" id="img-0" src="http://localhost:5000/stream/0" onerror="offlineCell(0)" onload="onlineCell(0)">
+          <div class="cbrack" id="brk-0">
+            <div class="cb tl" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb tr" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb bl" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb br" style="border-color:rgba(0,232,122,.5)"></div>
+          </div>
+          <div class="cell-label" id="lbl-0">S1</div>
+          <div class="cell-dot ok" id="dot-0"></div>
+          <div class="cell-bars">
+            <div class="mini-bar" id="abar-0" style="background:rgba(255,32,64,.7)"></div>
+            <div class="mini-bar" id="mbar-0" style="background:rgba(255,136,0,.7)"></div>
+          </div>
+          <div class="cell-offline" id="off-0">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+            <p>STUDENT 1 — OFFLINE</p>
+          </div>
+        </div>
+        <div class="cam-bar">
+          <div class="cb-name" id="cname-0">Student 1</div>
+          <div class="cb-stats">
+            <div class="cbs">F <span id="cf-0">—</span></div>
+            <div class="cbs">E <span id="ce-0">—</span></div>
+            <div class="cbs">FPS <span id="cfps-0">—</span></div>
+            <div class="cbs">V <span id="cv-0" style="color:var(--red)">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cam-cell" id="cell-1">
+        <div class="cam-feed-wrap">
+          <img class="cam-img" id="img-1" src="http://localhost:5000/stream/1" onerror="offlineCell(1)" onload="onlineCell(1)">
+          <div class="cbrack" id="brk-1">
+            <div class="cb tl" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb tr" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb bl" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb br" style="border-color:rgba(0,232,122,.5)"></div>
+          </div>
+          <div class="cell-label" id="lbl-1">S2</div>
+          <div class="cell-dot ok" id="dot-1"></div>
+          <div class="cell-bars">
+            <div class="mini-bar" id="abar-1" style="background:rgba(255,32,64,.7)"></div>
+            <div class="mini-bar" id="mbar-1" style="background:rgba(255,136,0,.7)"></div>
+          </div>
+          <div class="cell-offline" id="off-1">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+            <p>STUDENT 2 — OFFLINE</p>
+          </div>
+        </div>
+        <div class="cam-bar">
+          <div class="cb-name" id="cname-1">Student 2</div>
+          <div class="cb-stats">
+            <div class="cbs">F <span id="cf-1">—</span></div>
+            <div class="cbs">E <span id="ce-1">—</span></div>
+            <div class="cbs">FPS <span id="cfps-1">—</span></div>
+            <div class="cbs">V <span id="cv-1" style="color:var(--red)">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cam-cell" id="cell-2">
+        <div class="cam-feed-wrap">
+          <img class="cam-img" id="img-2" src="http://localhost:5000/stream/2" onerror="offlineCell(2)" onload="onlineCell(2)">
+          <div class="cbrack" id="brk-2">
+            <div class="cb tl" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb tr" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb bl" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb br" style="border-color:rgba(0,232,122,.5)"></div>
+          </div>
+          <div class="cell-label" id="lbl-2">S3</div>
+          <div class="cell-dot ok" id="dot-2"></div>
+          <div class="cell-bars">
+            <div class="mini-bar" id="abar-2" style="background:rgba(255,32,64,.7)"></div>
+            <div class="mini-bar" id="mbar-2" style="background:rgba(255,136,0,.7)"></div>
+          </div>
+          <div class="cell-offline" id="off-2">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+            <p>STUDENT 3 — OFFLINE</p>
+          </div>
+        </div>
+        <div class="cam-bar">
+          <div class="cb-name" id="cname-2">Student 3</div>
+          <div class="cb-stats">
+            <div class="cbs">F <span id="cf-2">—</span></div>
+            <div class="cbs">E <span id="ce-2">—</span></div>
+            <div class="cbs">FPS <span id="cfps-2">—</span></div>
+            <div class="cbs">V <span id="cv-2" style="color:var(--red)">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cam-cell" id="cell-3">
+        <div class="cam-feed-wrap">
+          <img class="cam-img" id="img-3" src="http://localhost:5000/stream/3" onerror="offlineCell(3)" onload="onlineCell(3)">
+          <div class="cbrack" id="brk-3">
+            <div class="cb tl" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb tr" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb bl" style="border-color:rgba(0,232,122,.5)"></div>
+            <div class="cb br" style="border-color:rgba(0,232,122,.5)"></div>
+          </div>
+          <div class="cell-label" id="lbl-3">S4</div>
+          <div class="cell-dot ok" id="dot-3"></div>
+          <div class="cell-bars">
+            <div class="mini-bar" id="abar-3" style="background:rgba(255,32,64,.7)"></div>
+            <div class="mini-bar" id="mbar-3" style="background:rgba(255,136,0,.7)"></div>
+          </div>
+          <div class="cell-offline" id="off-3">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+              <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+            <p>STUDENT 4 — OFFLINE</p>
+          </div>
+        </div>
+        <div class="cam-bar">
+          <div class="cb-name" id="cname-3">Student 4</div>
+          <div class="cb-stats">
+            <div class="cbs">F <span id="cf-3">—</span></div>
+            <div class="cbs">E <span id="ce-3">—</span></div>
+            <div class="cbs">FPS <span id="cfps-3">—</span></div>
+            <div class="cbs">V <span id="cv-3" style="color:var(--red)">—</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /cam-grid -->
+
+    <!-- STATS STRIP -->
+    <div class="stats-strip" id="stats-strip">
+      <!-- filled by JS -->
+      <div class="ss-card" id="ss-0"></div>
+      <div class="ss-card" id="ss-1"></div>
+      <div class="ss-card" id="ss-2"></div>
+      <div class="ss-card" id="ss-3"></div>
+    </div>
+
+  </div><!-- /main-area -->
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-head">
+      <div class="sb-title">Global Incident Log</div>
+      <div class="sb-badge" id="gbadge">0 EVENTS</div>
+    </div>
+
+    <div class="gv-grid">
+      <div class="gvc"><div class="gvcn" id="g-tab" style="color:var(--red)">0</div><div class="gvcl">Tab Switches</div></div>
+      <div class="gvc"><div class="gvcn" id="g-blur" style="color:var(--ora)">0</div><div class="gvcl">Window Blurs</div></div>
+      <div class="gvc"><div class="gvcn" id="g-abs" style="color:var(--red)">0</div><div class="gvcl">Face Absent</div></div>
+      <div class="gvc"><div class="gvcn" id="g-multi" style="color:var(--ora)">0</div><div class="gvcl">Multi Face</div></div>
+      <div class="gvc"><div class="gvcn" id="g-phone" style="color:var(--red)">0</div><div class="gvcl">Phone Detected</div></div>
+      <div class="gvc"><div class="gvcn" id="g-ear" style="color:var(--ora)">0</div><div class="gvcl">Earphone Detected</div></div>
+    </div>
+
+    <div id="vlog"><div class="empty-log" id="empmsg">NO INCIDENTS<br>ALL STUDENTS MONITORED</div></div>
+    <button class="clr" onclick="clearLog()">CLEAR LOG</button>
+  </div>
+
+</div><!-- /body -->
+
+<script>
+const API    = 'http://localhost:5000';
+const start  = Date.now();
+let lastVLen = 0;
+let wActive  = false;
+
+// ── Clock ───────────────────────────────────────────────────────────────────
+setInterval(()=>{
+  document.getElementById('clock').textContent = new Date().toTimeString().slice(0,8);
+  const el=Math.floor((Date.now()-start)/1000);
+  document.getElementById('sess').textContent =
+    `${String(Math.floor(el/60)).padStart(2,'0')}:${String(el%60).padStart(2,'0')}`;
+},1000);
+
+// ── Warning overlay ─────────────────────────────────────────────────────────
+function showWarning(stuName, stuViols, type, detail) {
+  if (wActive) return;
+  wActive = true;
+  const titles = {
+    TAB_SWITCH:        '🔴 Tab Switch Detected',
+    WINDOW_BLUR:       '🟠 Window Focus Lost',
+    FACE_ABSENT:       '🔴 Face Absent — 20 Seconds',
+    MULTIPLE_FACES:    '🟠 Multiple Faces — 10 Seconds',
+    PHONE_DETECTED:    '🔴 Mobile Phone Detected',
+    EARPHONE_DETECTED: '🟠 Earphone Detected',
+  };
+  document.getElementById('w-stu').textContent = stuName;
+  document.getElementById('w-num').textContent = stuViols;
+  document.getElementById('w-tit').textContent = titles[type] || type;
+  document.getElementById('w-det').textContent = detail;
+  document.getElementById('wov').classList.add('show');
+}
+function dismissW(){ wActive=false; document.getElementById('wov').classList.remove('show'); }
+
+// ── Camera cell helpers ─────────────────────────────────────────────────────
+function offlineCell(sid){
+  document.getElementById(`img-${sid}`).style.display = 'none';
+  document.getElementById(`off-${sid}`).classList.add('show');
+  setTimeout(()=>{
+    const img = document.getElementById(`img-${sid}`);
+    img.src = `${API}/stream/${sid}?t=${Date.now()}`;
+    img.style.display='block';
+    document.getElementById(`off-${sid}`).classList.remove('show');
+  },4000);
+}
+function onlineCell(sid){
+  document.getElementById(`img-${sid}`).style.display='block';
+  document.getElementById(`off-${sid}`).classList.remove('show');
+}
+
+// ── Update one camera cell from student data ────────────────────────────────
+function updateCell(s) {
+  const sid = s.id;
+  const n   = s.num_faces;
+
+  // Status dot
+  const dot = document.getElementById(`dot-${sid}`);
+  dot.className = 'cell-dot ' + (n===0?'absent':n===1?'ok':'multi');
+
+  // Corner bracket color
+  const brkColor = n===0 ? 'rgba(255,32,64,.5)' : n===1 ? 'rgba(0,232,122,.5)' : 'rgba(255,136,0,.5)';
+  document.querySelectorAll(`#brk-${sid} .cb`).forEach(el=>el.style.borderColor=brkColor);
+
+  // Label
+  document.getElementById(`lbl-${sid}`).textContent = `S${sid+1}`;
+  document.getElementById(`cname-${sid}`).textContent = s.name;
+
+  // Bottom bar stats
+  document.getElementById(`cf-${sid}`).textContent   = n;
+  document.getElementById(`ce-${sid}`).textContent   = s.num_eyes;
+  document.getElementById(`cfps-${sid}`).textContent = s.fps;
+  document.getElementById(`cv-${sid}`).textContent   = s.violation_count;
+
+  // Countdown bars (absent=red, multi=orange)
+  const absPct = Math.min((s.face_absent_secs/20)*100, 100);
+  const mulPct = Math.min((s.multi_face_secs/10)*100, 100);
+  document.getElementById(`abar-${sid}`).style.width = absPct + '%';
+  document.getElementById(`mbar-${sid}`).style.width = mulPct + '%';
+
+  // Stats strip
+  const rate = s.detection_rate;
+  const rCol = rate>80?'var(--green)':rate>50?'var(--yel)':'var(--red)';
+  document.getElementById(`ss-${sid}`).innerHTML = `
+    <div class="ss-name">${s.name}</div>
+    <div class="ss-row">
+      <div class="ss-val" style="color:${rCol}">${rate}%</div>
+      <div class="ss-sub">detection</div>
+    </div>
+    <div class="ss-dots">
+      <div class="ss-dot" style="background:${n===0?'var(--red)':n===1?'var(--green)':'var(--ora)'}"></div>
+      <div class="ss-dot" style="background:${s.violation_count>0?'var(--red)':'var(--mut2)'}"></div>
+      <div class="ss-dot" style="background:${s.online?'var(--green)':'var(--red)'}"></div>
+    </div>`;
+}
+
+// ── Main poll ───────────────────────────────────────────────────────────────
+async function poll() {
+  try {
+    const d = await (await fetch(`${API}/api/status`)).json();
+    const students = d.students || [];
+
+    students.forEach(s => updateCell(s));
+
+    // Global violation counters
+    const gv    = d.global_violations || [];
+    const tabs  = gv.filter(v=>v.type==='TAB_SWITCH').length;
+    const blurs = gv.filter(v=>v.type==='WINDOW_BLUR').length;
+    const abs   = gv.filter(v=>v.type==='FACE_ABSENT').length;
+    const multi = gv.filter(v=>v.type==='MULTIPLE_FACES').length;
+    const phone = gv.filter(v=>v.type==='PHONE_DETECTED').length;
+    const ear   = gv.filter(v=>v.type==='EARPHONE_DETECTED').length;
+
+    document.getElementById('g-tab').textContent   = tabs;
+    document.getElementById('g-blur').textContent  = blurs;
+    document.getElementById('g-abs').textContent   = abs;
+    document.getElementById('g-multi').textContent = multi;
+    document.getElementById('g-phone').textContent = phone;
+    document.getElementById('g-ear').textContent   = ear;
+    document.getElementById('gbadge').textContent  = `${d.total_violations} EVENTS`;
+
+    // Render only new violations
+    if (gv.length > lastVLen) {
+      const log  = document.getElementById('vlog');
+      document.getElementById('empmsg')?.remove();
+
+      gv.slice(lastVLen).forEach(v => {
+        const pillCls = v.type==='TAB_SWITCH'        ? 'pt'
+                      : v.type==='WINDOW_BLUR'        ? 'po'
+                      : v.type==='FACE_ABSENT'        ? 'pt'
+                      : v.type==='MULTIPLE_FACES'     ? 'po'
+                      : v.type==='PHONE_DETECTED'     ? 'pt'
+                      : v.type==='EARPHONE_DETECTED'  ? 'po'
+                      : 'pg';
+        const div = document.createElement('div');
+        div.className = 've';
+        div.innerHTML = `
+          <div class="vpill ${pillCls}">${v.type.replace(/_/g,' ')}</div>
+          <div>
+            <div class="vstu">${v.student_name}</div>
+            <div class="vd">${v.detail}</div>
+            <div class="vt">${v.time}</div>
+          </div>`;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+
+        if (['TAB_SWITCH','WINDOW_BLUR','FACE_ABSENT',
+             'MULTIPLE_FACES','PHONE_DETECTED','EARPHONE_DETECTED'].includes(v.type)) {
+          const stu = students.find(s=>s.id===v.student_id);
+          showWarning(v.student_name, stu?.violation_count||1, v.type, v.detail);
+        }
+      });
+      lastVLen = gv.length;
+    }
+  } catch(e) { /* server starting */ }
+}
+
+function clearLog() {
+  lastVLen = 0;
+  document.getElementById('vlog').innerHTML =
+    `<div class="empty-log" id="empmsg">NO INCIDENTS<br>ALL STUDENTS MONITORED</div>`;
+}
+
+setInterval(poll, 800);
+poll();
+</script>
+</body>
+</html>

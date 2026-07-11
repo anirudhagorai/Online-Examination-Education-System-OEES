@@ -1,0 +1,158 @@
+{% extends 'core/student_base.html' %}
+{% load static %}
+{% block title %}Profile{% endblock %}
+{% block page_title %}Profile{% endblock %}
+
+{% block content %}
+<div class="profile-wrapper">
+
+  <!-- Avatar Card -->
+  <div class="profile-avatar-card">
+    <div class="avatar-upload-wrap">
+      <div class="avatar-preview" id="avatarPreview">
+        {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" alt="Avatar" id="avatarImg">
+        {% else %}
+          <span class="avatar-initials">{{ initials }}</span>
+        {% endif %}
+      </div>
+      <label class="avatar-edit-btn" for="avatarInput" title="Change photo">
+        <span class="material-symbols-outlined">photo_camera</span>
+      </label>
+      <input type="file" id="avatarInput" accept="image/*" style="display:none;">
+    </div>
+    <h2 class="profile-name">{{ fullname }}</h2>
+    <span class="role-badge student">
+      <span class="material-symbols-outlined">person</span>Student
+    </span>
+  </div>
+
+  <!-- Details Card -->
+  <div class="profile-details-card">
+    <div class="profile-section-header">
+      <h3>Account Details</h3>
+    </div>
+
+    <div class="profile-fields">
+
+      <!-- Full Name -->
+      <div class="profile-field" id="field-full_name">
+        <div class="field-label">
+          <span class="material-symbols-outlined">badge</span>Full Name
+        </div>
+        <div class="field-value-wrap">
+          <span class="field-value" id="val-full_name">{{ fullname }}</span>
+          <input class="field-input" id="inp-full_name" name="full_name" type="text" value="{{ fullname }}" style="display:none;">
+        </div>
+        <button class="edit-btn" onclick="toggleEdit('full_name')" title="Edit">
+          <span class="material-symbols-outlined">edit</span>
+        </button>
+      </div>
+
+      <!-- Email -->
+      <div class="profile-field" id="field-email">
+        <div class="field-label">
+          <span class="material-symbols-outlined">mail</span>Email
+        </div>
+        <div class="field-value-wrap">
+          <span class="field-value" id="val-email">{{ email }}</span>
+          <input class="field-input" id="inp-email" name="email" type="email" value="{{ email }}" style="display:none;">
+        </div>
+        <button class="edit-btn" onclick="toggleEdit('email')" title="Edit">
+          <span class="material-symbols-outlined">edit</span>
+        </button>
+      </div>
+
+      <!-- Date of Birth -->
+      <div class="profile-field" id="field-dob">
+        <div class="field-label">
+          <span class="material-symbols-outlined">cake</span>Date of Birth
+        </div>
+        <div class="field-value-wrap">
+          <span class="field-value" id="val-dob">{{ profile.dob|default:"Not set" }}</span>
+          <input class="field-input" id="inp-dob" name="dob" type="date" value="{{ profile.dob|date:'Y-m-d' }}" style="display:none;">
+        </div>
+        <button class="edit-btn" onclick="toggleEdit('dob')" title="Edit">
+          <span class="material-symbols-outlined">edit</span>
+        </button>
+      </div>
+
+      <!-- Roll Number (read-only) -->
+      <div class="profile-field no-edit">
+        <div class="field-label">
+          <span class="material-symbols-outlined">tag</span>Roll Number
+        </div>
+        <div class="field-value-wrap">
+          <span class="field-value">{{ profile.roll_number|default:"N/A" }}</span>
+        </div>
+        <span class="lock-icon" title="Cannot be changed">
+          <span class="material-symbols-outlined">lock</span>
+        </span>
+      </div>
+
+      <!-- Role (read-only) -->
+      <div class="profile-field no-edit">
+        <div class="field-label">
+          <span class="material-symbols-outlined">school</span>Role
+        </div>
+        <div class="field-value-wrap">
+          <span class="field-value">Student</span>
+        </div>
+        <span class="lock-icon" title="Cannot be changed">
+          <span class="material-symbols-outlined">lock</span>
+        </span>
+      </div>
+
+    </div>
+
+    <!-- Save Button -->
+    <div class="profile-save-wrap" id="saveWrap" style="display:none;">
+      <button class="save-btn" id="saveBtn" onclick="saveProfile()">
+        <span class="material-symbols-outlined">save</span>Save Changes
+      </button>
+      <button class="cancel-btn" onclick="cancelAll()">Cancel</button>
+    </div>
+
+    <!-- Toast -->
+    <div class="profile-toast" id="profileToast"></div>
+
+    <!-- Django template values for JS -->
+    <input type="hidden" id="csrf-token" value="{{ csrf_token }}">
+    <input type="hidden" id="update-profile-url" value="{% url 'update_profile' %}">
+    <input type="hidden" id="send-email-otp-url" value="{% url 'send_email_change_otp' %}">
+    <input type="hidden" id="verify-email-otp-url" value="{% url 'verify_email_change_otp' %}">
+  </div>
+
+</div>
+<div class="otp-modal-overlay" id="emailOtpOverlay" style="display:none;">
+  <div class="otp-modal-box">
+    <div class="otp-modal-icon">
+      <span class="material-symbols-outlined">mark_email_read</span>
+    </div>
+    <h3>Verify New Email</h3>
+    <p class="otp-modal-sub">We sent a 6-digit code to <strong id="otpTargetEmail"></strong></p>
+    <div class="otp-group" id="modalOtpGroup">
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="motp1" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="motp2" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="motp3" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="motp4" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="motp5" />
+      <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="motp6" />
+    </div>
+    <div class="otp-modal-timer">
+      <span class="material-symbols-outlined" style="font-size:15px;">timer</span>
+      Expires in <span id="modalTimerVal">02:00</span>
+    </div>
+    <div class="otp-modal-msg" id="otpModalMsg"></div>
+    <div class="otp-modal-actions">
+      <button class="btn-verify-otp" id="modalVerifyBtn" onclick="submitEmailOtp()" disabled>
+        <span class="material-symbols-outlined" style="font-size:16px;">verified</span>Verify & Save
+      </button>
+      <button class="btn-resend-otp" id="modalResendBtn" onclick="resendEmailOtp()" disabled>
+        <span class="material-symbols-outlined" style="font-size:15px;">refresh</span>Resend OTP
+      </button>
+      <button class="btn-cancel-otp" onclick="closeEmailOtpModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
