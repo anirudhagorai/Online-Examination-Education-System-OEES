@@ -1,217 +1,275 @@
-# 🎓 Online Examination and Education System (OEES)
+# 🎓 Online Examination and Education System (OEES) — "EduExam"
 
-An intelligent web-based **Online Examination and Education System** developed using **Django and Python**. The platform provides a centralized environment for online learning, course management, examinations, and student monitoring.
+<p align="center">
+  <img src="https://img.shields.io/badge/Django-Backend-black?style=for-the-badge&logo=django">
+  <img src="https://img.shields.io/badge/MySQL-Database-blue?style=for-the-badge&logo=mysql">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-yellow?style=for-the-badge&logo=python">
+  <img src="https://img.shields.io/badge/OpenCV%20%2B%20YOLOv8-AI%20Proctoring-red?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Final%20Year%20Project-2025--26-success?style=for-the-badge">
+</p>
 
-The system is designed to simplify educational management by connecting **students, teachers, and administrators** through a secure and user-friendly platform.
+---
 
-## 🚀 Features
+## 📖 Overview
 
-* 👨‍🎓 Student Registration and Login
-* 👨‍🏫 Teacher Registration and Login
-* 🔐 Role-Based Authentication
-* 📊 Student and Teacher Dashboards
-* 📚 Course Management
-* 🎥 Online Course Video Access
-* 📝 Online Examination System
-* ⏱️ Timed Examinations
-* 📊 Automated Result Management
-* 👁️ Exam Monitoring and Proctoring
-* 📷 Camera-Based Monitoring
-* 🤖 AI-Based Object Detection using YOLO
-* 🖼️ Image Processing using OpenCV
-* 📧 OTP and Email Verification
-* 👤 Profile Management
-* 📈 Admin Dashboard and System Management
+Paper-based exams and manual course management remain a persistent challenge for educational institutions of all sizes — faculty lose hours organizing question papers, students wait days for results, and teacher–student communication gets lost across scattered channels.
 
-## 🛠️ Technologies Used
+**EduExam (OEES)** is a self-hosted web platform that brings course management, timed examinations, student communication, and **AI-powered exam proctoring** into a single application any college can run on its own server — without expensive licensing, cloud lock-in, or a dedicated IT team.
 
-### Backend
+The backend is built with **Django + MySQL**, the frontend is deliberately framework-free (**HTML5, CSS3, vanilla JS**) to keep it lightweight and maintainable, and a separate **ProctorScope** module uses OpenCV and YOLOv8 to monitor students in real time during live exams.
 
-* Python
-* Django
-* MySQL
+---
 
-### Frontend
+## 🎯 Objectives
 
-* HTML5
-* CSS3
-* JavaScript
+- Design a role-based web app supporting distinct **Student** and **Teacher** dashboards.
+- Provide secure registration via **OTP-based email verification**.
+- Build a full **course management module** with YouTube-integrated video content.
+- Implement an **online examination module** with scheduling, duration timers, and automated status tracking (upcoming / ongoing / completed / missed).
+- Deliver an **announcement & assignment** broadcasting system with priority levels, due dates, and attachments.
+- Enable **threaded direct messaging** between students and teachers.
+- Enforce security through CSRF protection, `@login_required` gating, role-based access control, and hashed password storage.
+- Add an **AI-assisted proctoring layer** to detect violations during live exams.
 
-### AI and Computer Vision
+---
 
-* OpenCV
-* YOLO
-* Ultralytics
-* NumPy
+## 👨‍💻 Project Team
 
-### Development Tools
+### Department of Computer Science & Engineering
+### Siliguri Institute of Technology
 
-* Visual Studio Code
-* Git
-* GitHub
-* MySQL
+| Name | Roll No |
+|------|---------|
+| Abhishek Chakroborty | 11900122083 |
+| Anirudha Gorai | 11900122123 |
+| Ankit Saha | 11900122085 |
+| Prithwish Narayan Majumder | 11900122118 |
 
-## 📂 Project Structure
+### Project Guide
+
+**Prof. \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_** *(add guide's name)*
+
+---
+
+## 🏗️ System Architecture
+
+EduExam follows Django's **Model–View–Template (MVT)** pattern, a close relative of MVC. Schema changes rarely touch templates, and frontend changes never require a migration.
 
 ```text
-Online-Examination-Education-System/
-│
-├── config/
-│   ├── settings.py
-│   ├── urls.py
-│   ├── wsgi.py
-│   └── asgi.py
-│
-├── core/
-│   ├── migrations/
-│   ├── models.py
-│   ├── views.py
-│   ├── urls.py
-│   └── admin.py
-│
-├── static/
-│   ├── css/
-│   ├── js/
-│   └── images/
-│
-├── templates/
-│   ├── student/
-│   ├── teacher/
-│   └── admin/
-│
-├── manage.py
-└── README.md
+                Browser (Student / Teacher)
+                          │
+                          ▼
+                  Django URL Router
+                (50+ routes, 4 groups)
+                          │
+                          ▼
+        ┌─────────────────────────────────┐
+        │        Views (core/views.py)    │
+        │  auth · courses · exams ·       │
+        │  announcements · messaging      │
+        └─────────────────────────────────┘
+                          │
+                          ▼
+              Django ORM  ──────────────►  MySQL Database
+                          │
+                          ▼
+              HTML Templates (Django Template Tags)
+                          │
+                          ▼
+                  Rendered Page / JSON (AJAX)
+
+
+        ┌──────────────────────────────────────┐
+        │     ProctorScope (independent)       │
+        │  Python http.server + ThreadingMixIn │
+        │  OpenCV (face/eye) + YOLOv8 (phone)  │
+        │  Live MJPEG stream + violation log   │
+        └──────────────────────────────────────┘
 ```
 
-## ⚙️ Installation and Setup
+---
 
-### 1. Clone the Repository
+## 🗃️ Database Design
+
+Six core models drive the data layer, connected through Django's ORM:
+
+| Model | Key Fields | Relationships |
+|-------|-----------|----------------|
+| **Profile** | role, dob, roll_number, teacher_id, otp, otp_created_at, is_verified, otp_attempts | OneToOne with Django's built-in User |
+| **Course** | name, description, status, color, progress, grade, youtube_id, total_videos | ForeignKey to teacher; ManyToMany to enrolled students |
+| **CourseProgress** | progress (0–100) | FK to student and course; unique-together pair |
+| **Exam** | title, duration, total_marks, total_questions, status, scheduled_date | FK to course; ManyToMany to assigned students |
+| **Announcement** | title, message, type, priority, due_date, attachment, is_active | FK to teacher and course; ManyToMany `read_by` students |
+| **Message** | subject, body, attachment, is_read, created_at | FK to sender/receiver; self-referential FK for threading |
+
+`Profile` extends Django's built-in `User` via `OneToOneField` rather than replacing it — preserving Django's auth machinery (sessions, hashing, login decorators) while adding institution-specific fields.
+
+---
+
+## 📦 Core Modules
+
+### 🔐 Authentication Module
+- Students register with name, email, and roll number; teachers use a unique teacher ID.
+- A 6-digit OTP is emailed on registration, expiring after a short window, with limited retry attempts and a resend option.
+- Forgot-password flow reuses the same OTP pattern.
+- Passwords are hashed with Django's **PBKDF2-SHA256**; raw passwords are never stored.
+
+### 🎓 Student Module
+- Dashboard summary: enrolled courses, upcoming tests, unread announcements, recent activity.
+- Join/drop courses in one click; track per-course and overall progress.
+- Exams split into upcoming / ongoing / completed / missed; results appear once an exam closes.
+- Announcement inbox with unread badge counts; threaded messaging with teachers.
+
+### 🧑‍🏫 Teacher Module
+- Dashboard: total students, active courses, recent announcements/messages.
+- Create/edit/remove courses with optional embedded YouTube playlists.
+- Create exams with title, course, marks, duration, schedule, and target students.
+- Post announcements/assignments with priority levels, due dates, and attachments.
+- Reply to student messages in a single threaded conversation.
+
+### 🕵️ ProctorScope — AI Proctoring Module
+An independent Python module (its own HTTP server, port 5000) that monitors students live during exams:
+
+- **Face & eye detection** — OpenCV Haar Cascade classifiers.
+- **Head-movement tracking** — `MovementTracker` analyzes the last 8 face centroids.
+- **Phone detection** — YOLOv8 nano (COCO class 67).
+- **Earphone detection** — geometric heuristic around the ear region.
+- **Noise filtering** — a `Stabilizer` class uses a 10-frame sliding window before logging a violation.
+- **Violation types tracked:** `FACE_ABSENT`, `MULTIPLE_FACES`, `PHONE_DETECTED`, `EARPHONE_DETECTED`, `TAB_SWITCH`, `FULLSCREEN_EXIT`.
+- **Live proctor dashboard** streaming MJPEG feeds from all connected students with a real-time violation log.
+
+---
+
+## 🛠️ Technology Stack
+
+### Backend
+- Python, Django 4.x / 5.x (MVT pattern, ORM, built-in auth & admin)
+- MySQL 8.0+ (via `mysqlclient`)
+- Django Email backend + Gmail SMTP (OTP delivery)
+- WhiteNoise (static file serving)
+- `python-decouple` / `.env` for secrets management
+
+### Frontend
+- HTML5, CSS3, JavaScript (ES6+) — no heavy frontend framework by design
+- Fetch API for AJAX interactions (OTP checks, enrollment toggles, read-status updates)
+
+### AI Proctoring (ProctorScope)
+- OpenCV 4.x (`opencv-python`) — Haar Cascade face/eye detection
+- YOLOv8 nano (Ultralytics) — object detection for phones
+- Python `http.server` + `ThreadingMixIn` — concurrent per-student streaming
+- Python `threading` — one camera thread per student, guarded by per-student locks
+
+### Deployment
+- Gunicorn + Nginx (production) / Django dev server (testing)
+- Git + GitHub for version control
+
+---
+
+## 🚀 Installation
+
+> ⚠️ **Note:** These are standard Django setup steps inferred from the project's tech stack. Update the repo URL, exact `requirements.txt`, and any project-specific `.env` variables once available.
 
 ```bash
-git clone YOUR_REPOSITORY_URL
-```
+# Clone the repository
+git clone https://github.com/yourusername/oees-eduexam.git
+cd oees-eduexam
 
-Move into the project directory:
-
-```bash
-cd Online-Examination-Education-System
-```
-
-### 2. Create a Virtual Environment
-
-```bash
+# Create and activate a virtual environment
 python -m venv venv
-```
+venv\Scripts\activate      # Windows
+source venv/bin/activate   # macOS/Linux
 
-### 3. Activate the Virtual Environment
+# Install dependencies
+pip install -r requirements.txt
 
-For Windows PowerShell:
+# Configure environment variables (.env)
+# DB credentials, SECRET_KEY, Gmail SMTP app password, etc.
 
-```powershell
-.\venv\Scripts\Activate.ps1
-```
-
-For Command Prompt:
-
-```cmd
-venv\Scripts\activate
-```
-
-### 4. Install Required Packages
-
-```bash
-python -m pip install django pymysql opencv-python ultralytics pillow numpy
-```
-
-### 5. Configure MySQL Database
-
-Create a new MySQL database:
-
-```sql
-CREATE DATABASE oees_db;
-```
-
-Configure the database in `config/settings.py`:
-
-```python
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'oees_db',
-        'USER': 'root',
-        'PASSWORD': 'YOUR_MYSQL_PASSWORD',
-        'HOST': 'localhost',
-        'PORT': '3306',
-    }
-}
-```
-
-### 6. Run Database Migrations
-
-```bash
-python manage.py makemigrations
+# Apply database migrations
 python manage.py migrate
-```
 
-### 7. Create an Admin User
-
-```bash
-python manage.py createsuperuser
-```
-
-### 8. Start the Django Development Server
-
-```bash
+# Run the development server
 python manage.py runserver
 ```
 
-Open the local development server in your browser.
+Then open `http://127.0.0.1:8000/`.
 
-## 👥 User Roles
+To run the ProctorScope module separately:
 
-### 👨‍🎓 Student
+```bash
+cd proctorscope
+python server.py
+```
 
-Students can access enrolled courses, watch educational videos, attend online examinations, view examination results, and manage their profiles.
+---
 
-### 👨‍🏫 Teacher
+## ✅ Project Features
 
-Teachers can manage educational content, create examinations, manage questions, monitor students, and review examination information.
+✅ Role-Based Dashboards (Student / Teacher)
 
-### 🛡️ Administrator
+✅ OTP-Based Secure Registration
 
-Administrators can manage students, teachers, courses, examinations, and overall system activities through the administrative dashboard.
+✅ Course Management with YouTube Integration
 
-## 🤖 AI-Based Exam Monitoring
+✅ Scheduled Online Examinations
 
-The system integrates **YOLO and OpenCV** for intelligent examination monitoring.
+✅ Priority-Based Announcements & Assignments
 
-The monitoring system can analyze camera input during online examinations and assist in detecting suspicious objects or activities. This improves the reliability and security of remote examinations.
+✅ Threaded Direct Messaging
 
-## 🎯 Project Objective
+✅ AI-Powered Webcam Proctoring (ProctorScope)
 
-The main objective of OEES is to provide a unified platform for **online education and examination management**.
+✅ CSRF Protection & Hashed Passwords
 
-The system combines learning resources, online examinations, automated management, and intelligent monitoring to create an efficient digital education environment.
+✅ Django Migrations for Schema Versioning
 
-## 🔮 Future Enhancements
+---
 
-* Advanced AI-Based Cheating Detection
-* Face Recognition and Identity Verification
-* Real-Time Teacher Monitoring Dashboard
-* Detailed Student Performance Analytics
-* Cloud Deployment
-* Mobile Application Support
-* Advanced Notification System
+## ⚠️ Known Limitations
 
-## 👨‍💻 Developed By
+- In-browser question answering with automated scoring is not yet built — exam scheduling/status tracking is complete, but the results page currently depends on this pending module.
+- Designed for single-institution deployment; multi-tenancy would need architectural changes.
+- Notifications are pull-based (on page load), not real-time push.
 
-**Ankit Saha**
-**Abhishek Chakroborty**
-**Anirudha Gorai**
-**Prithwish Narayan Majumder**
+---
 
-B.Tech Computer Science and Engineering
+## 🔬 Future Scope
 
-## 📄 License
+- **In-Browser Answer Submission** — question bank + automated MCQ scoring
+- **Live Push Notifications** — Django Channels + WebSockets
+- **Performance Analytics Dashboard** — visual trends for teachers
+- **REST API & Mobile Apps** — Django REST Framework layer for Android/iOS
+- **Multi-Institution Support** — scoped data namespaces for multi-tenant deployment
+- **AI Essay Grading** — NLP-based feedback and plagiarism flagging
+- **Integrated Video Classes** — embedded Jitsi Meet conferencing
+- **Gamification** — completion certificates, badges, progress indicators
 
-This project is developed for educational and academic purposes.
+---
+
+## 📚 References
+
+[1] Bhadouria A., Gupta P., Bindal P., Madan K., Sonal S. *Automated Examination System Using Machine Learning and Natural Language Processing*, IC3 2024.
+
+[2] Django Software Foundation. *Django Documentation* (v5.0).
+
+[3] Ferraiolo D. F., Barkley J. F., Kuhn D. R. *A Role-Based Access Control Model and Reference Implementation Within a Corporate Intranet*, ACM TISSEC, 1999.
+
+[4] Islam K., Ahmadi P., Yousaf S. *A Survey of Learning Management Systems and Synchronous Distance Education Tools*, arXiv:1711.10585, 2017.
+
+[5] Jocher G., Chaurasia A., Qiu J. *Ultralytics YOLOv8* (v8.0.0) [Computer software], 2023.
+
+[6] OpenCV Team. *OpenCV Documentation* (v4.x), 2024.
+
+[7] Oracle Corporation. *MySQL 8.0 Reference Manual*, 2024.
+
+[8] Sasikumar S., Bijlani K. *New Features for Webcam Proctoring Using Python and OpenCV*, IJRTE, 2021.
+
+[9] Kaliski B. *PKCS #5: Password-Based Cryptography Specification, Version 2.0* (RFC 2898), IETF, 2000.
+
+[10] Viola P., Jones M. *Rapid Object Detection Using a Boosted Cascade of Simple Features*, CVPR 2001.
+
+[11] W3C / OWASP Foundation. *Cross-Site Request Forgery (CSRF) Prevention Cheat Sheet*, 2024.
+
+---
+
+© This project was developed for academic and research purposes as part of the Bachelor of Technology (B.Tech) degree requirement at Siliguri Institute of Technology.
